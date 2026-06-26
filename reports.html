@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Reports</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Fira Sans', sans-serif; background: #0F1117; color: #E2E8F0; margin: 0; }
+    ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: #0F1117; } ::-webkit-scrollbar-thumb { background: #1E2A45; border-radius: 9999px; }
+    .sidebar { width: 240px; min-width: 240px; background: #151B2E; border-right: 1px solid #1E2A45; height: 100vh; position: sticky; top: 0; display: flex; flex-direction: column; overflow-y: auto; }
+    .nav-link { display: flex; align-items: center; gap: 10px; padding: 9px 16px; border-radius: 8px; color: #64748B; font-size: 14px; font-weight: 500; text-decoration: none; transition: all 0.15s ease; cursor: pointer; }
+    .nav-link:hover { background: rgba(59,130,246,0.08); color: #E2E8F0; }
+    .nav-link.active { background: rgba(59,130,246,0.15); color: #3B82F6; }
+    .card { background: #151B2E; border: 1px solid #1E2A45; border-radius: 12px; }
+    .report-card { background: #151B2E; border: 1px solid #1E2A45; border-radius: 12px; padding: 20px; transition: all 0.15s; cursor: pointer; }
+    .report-card:hover { border-color: #3B82F6; transform: translateY(-1px); }
+    .btn { display:inline-flex; align-items:center; gap:6px; border-radius:8px; padding:7px 14px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s; border:none; font-family:inherit; }
+    .btn-primary { background:#3B82F6; color:white; }
+    .btn-primary:hover { background:#2563EB; }
+    a { text-decoration: none; }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <div style="display:flex; height:100vh; overflow:hidden;">
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar" role="navigation" aria-label="Main navigation">
+      <div style="padding:20px 16px 12px; border-bottom:1px solid #1E2A45;">
+        <a href="index.html" style="display:flex; align-items:center; gap:10px;">
+          <div style="width:32px; height:32px; background:linear-gradient(135deg,#3B82F6,#8B5CF6); border-radius:8px; display:flex; align-items:center; justify-content:center;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          </div>
+          <span style="font-size:16px; font-weight:700; color:#E2E8F0; letter-spacing:-0.02em;">DataPulse</span>
+        </a>
+      </div>
+      <div style="padding:12px 8px; flex:1;">
+        <p style="font-size:10px; font-weight:700; color:#64748B; letter-spacing:0.08em; padding:0 8px; margin:0 0 6px;">MAIN</p>
+        <a href="index.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Overview
+        </a>
+        <a href="analytics.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+          Analytics
+        </a>
+        <a href="users.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Users
+        </a>
+        <a href="reports.html" class="nav-link active" aria-current="page">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Reports
+        </a>
+        <div style="height:1px; background:#1E2A45; margin:12px 0;"></div>
+        <p style="font-size:10px; font-weight:700; color:#64748B; letter-spacing:0.08em; padding:0 8px; margin:0 0 6px;">MANAGE</p>
+        <a href="settings.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </a>
+        <div style="height:1px; background:#1E2A45; margin:12px 0;"></div>
+        <p style="font-size:10px; font-weight:700; color:#64748B; letter-spacing:0.08em; padding:0 8px; margin:0 0 6px;">QUICK ACCESS</p>
+        <a href="analytics.html#traffic" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+          Traffic
+        </a>
+        <a href="analytics.html#revenue" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Revenue
+        </a>
+        <a href="#export" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export Data
+        </a>
+      </div>
+      <div style="padding:12px 8px; border-top:1px solid #1E2A45;">
+        <a href="settings.html" class="nav-link" style="gap:10px;">
+          <div style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#3B82F6,#8B5CF6); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <span style="font-size:11px; font-weight:700; color:white;">ET</span>
+          </div>
+          <div style="flex:1; min-width:0;">
+            <p style="margin:0; font-size:13px; font-weight:600; color:#E2E8F0;">Ethan</p>
+            <p style="margin:0; font-size:11px; color:#64748B;">Admin</p>
+          </div>
+        </a>
+      </div>
+    </nav>
+
+    <!-- MAIN -->
+    <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+      <header style="background:#151B2E; border-bottom:1px solid #1E2A45; padding:0 24px; height:56px; display:flex; align-items:center; gap:16px; flex-shrink:0;">
+        <div style="flex:1; max-width:400px; position:relative;">
+          <svg style="position:absolute; left:10px; top:50%; transform:translateY(-50%);" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" placeholder="Search reports..." aria-label="Search reports" style="width:100%; background:#0F1117; border:1px solid #1E2A45; border-radius:8px; padding:7px 12px 7px 32px; font-size:13px; color:#E2E8F0; outline:none; font-family:inherit;" onfocus="this.style.borderColor='#3B82F6'" onblur="this.style.borderColor='#1E2A45'" />
+        </div>
+        <div style="flex:1;"></div>
+        <a href="settings.html" style="width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#3B82F6,#8B5CF6); display:flex; align-items:center; justify-content:center;" aria-label="Profile">
+          <span style="font-size:12px; font-weight:700; color:white;">ET</span>
+        </a>
+      </header>
+
+      <main style="flex:1; overflow-y:auto; padding:24px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px;">
+          <div>
+            <h1 style="margin:0 0 4px; font-size:22px; font-weight:700; color:#E2E8F0; letter-spacing:-0.02em;">Reports</h1>
+            <p style="margin:0; font-size:14px; color:#64748B;">Generate, schedule and export your data reports</p>
+          </div>
+          <button class="btn btn-primary" onclick="alert('New report wizard would open here')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Report
+          </button>
+        </div>
+
+        <!-- Report cards grid -->
+        <h2 style="margin:0 0 14px; font-size:14px; font-weight:600; color:#94A3B8; letter-spacing:0.04em;">RECENT REPORTS</h2>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; margin-bottom:32px;">
+
+          <div class="report-card" onclick="alert('Opening Q2 2026 Analytics Report')">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+              <div style="width:36px; height:36px; background:rgba(59,130,246,0.12); border-radius:8px; display:flex; align-items:center; justify-content:center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+              </div>
+              <span style="background:rgba(16,185,129,0.12); color:#10B981; font-size:11px; font-weight:600; padding:2px 8px; border-radius:9999px;">Ready</span>
+            </div>
+            <h3 style="margin:0 0 4px; font-size:15px; font-weight:600; color:#E2E8F0;">Q2 2026 Analytics</h3>
+            <p style="margin:0 0 12px; font-size:12px; color:#64748B;">Full analytics summary — traffic, revenue, conversions</p>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:11px; color:#64748B; font-family:'Fira Code',monospace;">Generated Jun 26, 2026</span>
+              <button onclick="event.stopPropagation(); alert('Downloading Q2 2026 Analytics Report...')" style="display:flex; align-items:center; gap:4px; background:none; border:none; color:#3B82F6; font-size:12px; cursor:pointer; font-family:inherit; padding:0;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download
+              </button>
+            </div>
+          </div>
+
+          <div class="report-card" onclick="alert('Opening User Growth Report')">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+              <div style="width:36px; height:36px; background:rgba(139,92,246,0.12); border-radius:8px; display:flex; align-items:center; justify-content:center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              </div>
+              <span style="background:rgba(16,185,129,0.12); color:#10B981; font-size:11px; font-weight:600; padding:2px 8px; border-radius:9999px;">Ready</span>
+            </div>
+            <h3 style="margin:0 0 4px; font-size:15px; font-weight:600; color:#E2E8F0;">User Growth Report</h3>
+            <p style="margin:0 0 12px; font-size:12px; color:#64748B;">New registrations, churn, and retention analysis</p>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:11px; color:#64748B; font-family:'Fira Code',monospace;">Generated Jun 20, 2026</span>
+              <button onclick="event.stopPropagation(); alert('Downloading User Growth Report...')" style="display:flex; align-items:center; gap:4px; background:none; border:none; color:#3B82F6; font-size:12px; cursor:pointer; font-family:inherit; padding:0;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download
+              </button>
+            </div>
+          </div>
+
+          <div class="report-card" onclick="alert('Opening Revenue Deep-Dive')">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+              <div style="width:36px; height:36px; background:rgba(245,158,11,0.12); border-radius:8px; display:flex; align-items:center; justify-content:center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
+              <span style="background:rgba(245,158,11,0.12); color:#F59E0B; font-size:11px; font-weight:600; padding:2px 8px; border-radius:9999px;">Processing</span>
+            </div>
+            <h3 style="margin:0 0 4px; font-size:15px; font-weight:600; color:#E2E8F0;">Revenue Deep-Dive</h3>
+            <p style="margin:0 0 12px; font-size:12px; color:#64748B;">MRR breakdown by plan, region, and cohort</p>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:11px; color:#64748B; font-family:'Fira Code',monospace;">Requested Jun 26, 2026</span>
+              <span style="font-size:11px; color:#F59E0B;">~5 min remaining</span>
+            </div>
+          </div>
+
+          <div class="report-card" onclick="alert('Opening Performance Audit')">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+              <div style="width:36px; height:36px; background:rgba(16,185,129,0.12); border-radius:8px; display:flex; align-items:center; justify-content:center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>
+              </div>
+              <span style="background:rgba(16,185,129,0.12); color:#10B981; font-size:11px; font-weight:600; padding:2px 8px; border-radius:9999px;">Ready</span>
+            </div>
+            <h3 style="margin:0 0 4px; font-size:15px; font-weight:600; color:#E2E8F0;">Performance Audit</h3>
+            <p style="margin:0 0 12px; font-size:12px; color:#64748B;">System latency, uptime, and error rate report</p>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:11px; color:#64748B; font-family:'Fira Code',monospace;">Generated Jun 15, 2026</span>
+              <button onclick="event.stopPropagation(); alert('Downloading Performance Audit...')" style="display:flex; align-items:center; gap:4px; background:none; border:none; color:#3B82F6; font-size:12px; cursor:pointer; font-family:inherit; padding:0;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Export section -->
+        <section id="export">
+          <h2 style="margin:0 0 14px; font-size:14px; font-weight:600; color:#94A3B8; letter-spacing:0.04em;">EXPORT DATA</h2>
+          <div class="card" style="padding:24px;">
+            <p style="margin:0 0 20px; font-size:14px; color:#94A3B8;">Download raw data exports for external analysis. All exports are scoped to your current date range.</p>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px;">
+              <button onclick="alert('Exporting transactions as CSV...')" style="display:flex; align-items:center; gap:10px; background:#0F1117; border:1px solid #1E2A45; border-radius:8px; padding:14px 16px; cursor:pointer; font-family:inherit; color:#E2E8F0; text-align:left; transition:all 0.15s;" onmouseenter="this.style.borderColor='#3B82F6'" onmouseleave="this.style.borderColor='#1E2A45'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+                <div><p style="margin:0; font-size:13px; font-weight:600;">Transactions CSV</p><p style="margin:0; font-size:11px; color:#64748B;">All transactions</p></div>
+              </button>
+              <button onclick="alert('Exporting users as CSV...')" style="display:flex; align-items:center; gap:10px; background:#0F1117; border:1px solid #1E2A45; border-radius:8px; padding:14px 16px; cursor:pointer; font-family:inherit; color:#E2E8F0; text-align:left; transition:all 0.15s;" onmouseenter="this.style.borderColor='#3B82F6'" onmouseleave="this.style.borderColor='#1E2A45'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+                <div><p style="margin:0; font-size:13px; font-weight:600;">Users CSV</p><p style="margin:0; font-size:11px; color:#64748B;">User directory</p></div>
+              </button>
+              <button onclick="alert('Exporting analytics as JSON...')" style="display:flex; align-items:center; gap:10px; background:#0F1117; border:1px solid #1E2A45; border-radius:8px; padding:14px 16px; cursor:pointer; font-family:inherit; color:#E2E8F0; text-align:left; transition:all 0.15s;" onmouseenter="this.style.borderColor='#3B82F6'" onmouseleave="this.style.borderColor='#1E2A45'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2"><polyline points="16,18 22,12 16,6"/><polyline points="8,6 2,12 8,18"/></svg>
+                <div><p style="margin:0; font-size:13px; font-weight:600;">Analytics JSON</p><p style="margin:0; font-size:11px; color:#64748B;">Raw event data</p></div>
+              </button>
+              <button onclick="alert('Exporting full report as PDF...')" style="display:flex; align-items:center; gap:10px; background:#0F1117; border:1px solid #1E2A45; border-radius:8px; padding:14px 16px; cursor:pointer; font-family:inherit; color:#E2E8F0; text-align:left; transition:all 0.15s;" onmouseenter="this.style.borderColor='#3B82F6'" onmouseleave="this.style.borderColor='#1E2A45'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+                <div><p style="margin:0; font-size:13px; font-weight:600;">Full PDF Report</p><p style="margin:0; font-size:11px; color:#64748B;">Board-ready summary</p></div>
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>
