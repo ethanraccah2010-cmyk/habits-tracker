@@ -8,6 +8,7 @@ import * as nutrition from './modules/nutrition.js';
 import * as sport from './modules/sport.js';
 import * as sommeil from './modules/sommeil.js';
 import * as agenda from './modules/agenda.js';
+import * as business from './modules/business.js';
 
 const greetHeader = () => {
   const d = new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -34,7 +35,8 @@ export const VIEWS = {
                mount: sport.mount, bind: sport.bind, onFab: sport.onFab },
   sommeil:   { accent: sommeil.accent, tab: false, header: sommeil.header, render: sommeil.render,
                mount: sommeil.mount, bind: sommeil.bind, onFab: sommeil.onFab },
-  business:  { accent: '#ff6b9d', tab: false, header: titleHeader('Business', 'CRM prospects'),               render: stub('Business') },
+  business:  { accent: business.accent, tab: false, header: business.header, render: business.render,
+               mount: business.mount, bind: business.bind, onFab: business.onFab },
   devoirs:   { accent: '#f5ebcc', tab: false, header: titleHeader('Devoirs & Notes', 'Échéances & moyennes'), render: stub('Devoirs & Notes') },
 };
 

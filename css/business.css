@@ -1,0 +1,37 @@
+/* ============================================================
+   business.css — Business / CRM (brief §9.7). Accent rose #ff6b9d.
+   Repris fidèlement de la maquette pages 5-8, page 7.
+   Réutilise .popscrim/.popcard (nutrition.css) pour la fiche.
+   ============================================================ */
+
+.prospect { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 15px; cursor: pointer; margin-bottom: 10px; }
+.prospect .pt { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+.prospect .co { font-family: var(--head); font-weight: 700; font-size: 16px; }
+.prospect .st { font-size: 10px; font-weight: 600; padding: 4px 9px; border-radius: 99px; white-space: nowrap; }
+.st-neg { color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.st-pro { color: #8b909c; background: #ffffff10; }
+.st-win { color: #1c9b66; background: #1c9b6622; }
+.st-lost { color: #ff6b6b; background: #ff6b6b1f; }
+.prospect .sec { font-size: 11px; color: var(--dim); margin-bottom: 11px; }
+.prospect .nx { display: flex; align-items: center; gap: 8px; font-size: 13px; border-top: 1px solid var(--line); padding-top: 11px; }
+.prospect .nx .ic { color: var(--accent); }
+.prospect .nx .dt { margin-left: auto; font-size: 11px; color: var(--dim); }
+
+/* Fiche complète (dans .popcard) */
+.fiche .co { font-family: var(--head); font-weight: 700; font-size: 20px; padding-right: 30px; margin-bottom: 8px; }
+.fiche .row { display: flex; justify-content: space-between; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.fiche .k { color: var(--dim); white-space: nowrap; }
+.fiche .vv { color: var(--ink); text-align: right; word-break: break-word; }
+.fiche a { color: var(--accent); text-decoration: none; }
+.fiche .modbtn { margin-top: 14px; width: 100%; background: var(--accent); color: #06120e; border: none; border-radius: 11px; padding: 12px; font-weight: 600; font-size: 14px; cursor: pointer; font-family: var(--ui); }
+
+/* Mode édition */
+.edit label { font-size: 10px; text-transform: uppercase; letter-spacing: .8px; color: var(--dim); display: block; margin: 10px 0 4px; }
+.edit input, .edit select { width: 100%; background: #0e0e12; border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px; color: var(--ink); font-size: 13px; font-family: var(--ui); }
+.edit input:focus, .edit select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.edit .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.edit .save { margin-top: 14px; width: 100%; background: var(--accent); color: #06120e; border: none; border-radius: 11px; padding: 12px; font-weight: 600; font-size: 14px; cursor: pointer; font-family: var(--ui); }
+.edit .save[disabled] { opacity: .6; }
+.edit .del { margin-top: 8px; width: 100%; background: transparent; border: 1px solid #ff6b6b40; color: #ff6b6b; border-radius: 11px; padding: 11px; font-weight: 600; font-size: 13px; cursor: pointer; font-family: var(--ui); }
+.fichecard { max-height: 86vh; overflow-y: auto; }
+.fichecard::-webkit-scrollbar { width: 0; }
