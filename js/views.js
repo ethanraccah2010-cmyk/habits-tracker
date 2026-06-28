@@ -4,6 +4,9 @@
    et optionnellement mount()/bind()/onFab() pour les modules câblés.
    ============================================================ */
 import * as habitudes from './modules/habitudes.js';
+import * as nutrition from './modules/nutrition.js';
+import * as sport from './modules/sport.js';
+import * as sommeil from './modules/sommeil.js';
 
 const greetHeader = () => {
   const d = new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -12,46 +15,36 @@ const greetHeader = () => {
 const titleHeader = (title, sub) =>
   () => `<div class="pagetitle">${title}</div><div class="pagesub">${sub}</div>`;
 
-/* Stub d'étape 1 — sera remplacé par le vrai module. */
+/* Stub — sera remplacé par le vrai module à son étape. */
 const stub = (label) => () =>
   `<div class="stub"><span class="dotty"></span>${label} · module branché aux prochaines étapes.</div>`;
 
-/* Écran "Plus" : grille vers les modules secondaires. */
-const PLUS_MODULES = [
-  { id: 'sport',    ic: '🏋️', nm: 'Sport',           sub: 'Séances & progression' },
-  { id: 'sommeil',  ic: '🌙', nm: 'Sommeil',          sub: 'Nuits & dette' },
-  { id: 'business', ic: '💼', nm: 'Business',         sub: 'CRM prospects' },
-  { id: 'devoirs',  ic: '📚', nm: 'Devoirs & Notes',  sub: 'Échéances & moyennes' },
-];
-const plusGrid = () =>
-  `<div class="plus-grid">` +
-  PLUS_MODULES.map(m =>
-    `<button class="plus-card" data-go="${m.id}">
-       <span class="ic">${m.ic}</span>
-       <span class="nm">${m.nm}</span>
-       <span class="sub">${m.sub}</span>
-     </button>`).join('') +
-  `</div>`;
-
-/* En-tête d'un sous-module : lien retour vers Plus + titre. */
-const subHeader = (title, sub) => () =>
-  `<button class="back-link" data-go="plus">‹ Plus</button>
-   <div class="pagetitle">${title}</div><div class="pagesub">${sub}</div>`;
-
 export const VIEWS = {
-  accueil:   { accent: '#8b7bff', tab: true,  header: greetHeader,                              render: stub('Accueil') },
+  accueil:   { accent: '#8b7bff', tab: true, header: greetHeader, render: stub('Accueil') },
   habitudes: { accent: habitudes.accent, tab: true, header: habitudes.header, render: habitudes.render,
                mount: habitudes.mount, bind: habitudes.bind, onFab: habitudes.onFab },
-  nutrition: { accent: '#3fb88a', tab: true,  header: titleHeader('Nutrition', 'Repas & poids'),         render: stub('Nutrition') },
-  agenda:    { accent: '#1f8fe0', tab: true,  header: titleHeader('Agenda', 'Tes événements à venir'),    render: stub('Agenda') },
+  nutrition: { accent: nutrition.accent, tab: true, header: nutrition.header, render: nutrition.render,
+               mount: nutrition.mount, bind: nutrition.bind, onFab: nutrition.onFab },
 
-  plus:      { accent: '#8b7bff', tab: false, header: titleHeader('Plus', 'Tous les modules'),  render: plusGrid },
-
-  sport:     { accent: '#ff4d4d', tab: false, header: subHeader('Sport', 'Séances & progression'),   render: stub('Sport') },
-  sommeil:   { accent: '#8accff', tab: false, header: subHeader('Sommeil', 'Nuits & dette'),          render: stub('Sommeil') },
-  business:  { accent: '#ff6b9d', tab: false, header: subHeader('Business', 'CRM prospects'),         render: stub('Business') },
-  devoirs:   { accent: '#f5ebcc', tab: false, header: subHeader('Devoirs & Notes', 'Échéances & moyennes'), render: stub('Devoirs & Notes') },
+  // Destinations du menu speed-dial (déclenché par ••• dans la tab bar)
+  agenda:    { accent: '#1f8fe0', tab: false, header: titleHeader('Agenda', 'Tes événements à venir'),       render: stub('Agenda') },
+  sport:     { accent: sport.accent, tab: false, header: sport.header, render: sport.render,
+               mount: sport.mount, bind: sport.bind, onFab: sport.onFab },
+  sommeil:   { accent: sommeil.accent, tab: false, header: sommeil.header, render: sommeil.render,
+               mount: sommeil.mount, bind: sommeil.bind, onFab: sommeil.onFab },
+  business:  { accent: '#ff6b9d', tab: false, header: titleHeader('Business', 'CRM prospects'),               render: stub('Business') },
+  devoirs:   { accent: '#f5ebcc', tab: false, header: titleHeader('Devoirs & Notes', 'Échéances & moyennes'), render: stub('Devoirs & Notes') },
 };
 
-/* Onglets de la tab bar, dans l'ordre, avec le FAB injecté au centre. */
-export const TAB_ORDER = ['accueil', 'habitudes', 'nutrition', 'agenda'];
+/* Onglets de la tab bar (5ᵉ emplacement = déclencheur ••• du speed-dial). */
+export const TAB_ORDER = ['accueil', 'habitudes', 'nutrition'];
+
+/* Destinations du speed-dial (haut → bas), avec leur emoji et accent. */
+export const SPEED_DIAL = [
+  { id: 'agenda',   label: 'Agenda',          ic: '📅', accent: '#1f8fe0' },
+  { id: 'sport',    label: 'Sport',           ic: '🏋️', accent: '#ff4d4d' },
+  { id: 'sommeil',  label: 'Sommeil',         ic: '🌙', accent: '#8accff' },
+  { id: 'business', label: 'Business',        ic: '💼', accent: '#ff6b9d' },
+  { id: 'devoirs',  label: 'Devoirs & Notes', ic: '📚', accent: '#f5ebcc' },
+];
+export const SPEED_DIAL_IDS = SPEED_DIAL.map(s => s.id);

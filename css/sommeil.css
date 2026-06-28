@@ -1,0 +1,39 @@
+/* ============================================================
+   sommeil.css — Sommeil (brief §9.6). Accent bleu clair #8accff.
+   Repris fidèlement de la maquette pages 5-8, page 6.
+   ============================================================ */
+
+.bedhero { display: flex; align-items: center; gap: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 18px; margin-bottom: 11px; }
+.bedhero .moon { font-size: 40px; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--accent) 55%, transparent)); }
+.bedhero .lab { font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--dim); }
+.bedhero .big { font-family: var(--head); font-weight: 700; font-size: 30px; color: var(--accent); text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 45%, transparent); line-height: 1.1; }
+.bedhero .sub { font-size: 11px; color: var(--dim); margin-top: 4px; }
+
+.sl2 { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-bottom: 11px; }
+.scard { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 13px 14px; }
+.scard .l { font-size: 9px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--dim); }
+.scard .b { font-family: var(--head); font-weight: 700; font-size: 22px; margin-top: 6px; }
+.scard.debt .b { color: #EBB54D; }
+.scard.debt .b.ok { color: var(--accent); }
+
+.hyp { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 15px 16px 12px; margin-bottom: 11px; }
+.hyp .tt { font-size: 13px; font-weight: 500; margin-bottom: 10px; display: block; }
+.nightsel { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 9px; margin-bottom: 4px; }
+.nightsel::-webkit-scrollbar { height: 0; }
+.nightsel button { flex: none; border: 1px solid var(--line); background: var(--card2); color: var(--dim); border-radius: 11px; padding: 8px 13px; cursor: pointer; font-family: var(--ui); text-align: center; line-height: 1.2; min-width: 52px; }
+.nightsel button .dd { font-family: var(--head); font-weight: 700; font-size: 14px; color: var(--ink); }
+.nightsel button .dn { font-size: 9px; }
+.nightsel button.on { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 9px color-mix(in srgb, var(--accent) 50%, transparent); }
+.nightsel button.on .dd, .nightsel button.on .dn { color: #06120e; }
+
+/* Détail de la nuit sélectionnée (v1 : pas de stades, on affiche les faits saisis) */
+.nightdet { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 6px; }
+.nightdet .nd { background: var(--card2); border-radius: 12px; padding: 11px 8px; text-align: center; }
+.nightdet .nd .k { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); }
+.nightdet .nd .v { font-family: var(--head); font-weight: 700; font-size: 16px; margin-top: 5px; }
+.nightdet .nd .v.acc { color: var(--accent); }
+
+.hh2 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.slc { width: 100%; height: 84px; display: block; }
+.slc .ln { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; filter: drop-shadow(0 0 5px var(--accent)); }
+.slx { display: flex; justify-content: space-between; margin-top: 6px; font-size: 9px; color: var(--dim); }
