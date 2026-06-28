@@ -1,0 +1,126 @@
+/* ============================================================
+   components.css — composants repris des maquettes (source visuelle).
+   Réutilisables par les modules (seg, graph, bars, prog, habit…).
+   ============================================================ */
+
+/* Contrôle segmenté (période) — "plein lueur" */
+.seg { display: inline-flex; background: var(--card2); border-radius: 9px; padding: 3px; }
+.seg button {
+  border: none; background: transparent; color: var(--dim);
+  font-family: var(--ui); font-size: 11px; padding: 6px 12px; border-radius: 7px;
+  cursor: pointer; transition: .2s;
+}
+.seg button.on {
+  background: var(--accent); color: #06120e; font-weight: 600;
+  box-shadow: 0 0 9px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+/* Carte graphe */
+.graph { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 15px 16px 12px; }
+.graph .gh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.graph .gh .tt { font-size: 13px; color: var(--ink); font-weight: 500; }
+
+/* Bar chart "pic surligné" */
+.bars { display: flex; align-items: flex-end; gap: 7px; height: 96px; padding-top: 6px; }
+.bars.dense { gap: 3px; }
+.bars .col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; justify-content: flex-end; height: 100%; }
+.bars .b {
+  width: 100%; max-width: 24px; border-radius: 6px 6px 2px 2px;
+  background: #ffffff14; height: 0; cursor: pointer;
+  animation: grow .8s cubic-bezier(.4,0,.2,1) forwards;
+  transition: background .2s, box-shadow .2s;
+}
+.bars.dense .b { max-width: none; }
+.bars .b.max { background: var(--accent); box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 55%, transparent); }
+.bars .d { font-size: 9px; color: var(--dim); }
+
+/* Barre de progression "lueur" + point pulsant */
+.prog { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 15px 16px; }
+.prog .ph { display: flex; justify-content: space-between; align-items: center; margin-bottom: 11px; }
+.prog .pt { font-size: 13px; color: var(--ink); font-weight: 500; }
+.prog .pt b { color: var(--accent); font-family: var(--head); }
+.prog .flame {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--card2); border-radius: 99px; padding: 5px 11px; font-size: 12px; color: var(--dim);
+}
+.prog .flame b { color: var(--accent); font-weight: 600; }
+.prog .track { height: 9px; border-radius: 99px; background: #ffffff10; position: relative; }
+.prog .fill {
+  height: 100%; border-radius: 99px; background: var(--accent);
+  box-shadow: 0 0 12px var(--accent); width: 0%;
+  transition: width .4s cubic-bezier(.4,0,.2,1); position: relative;
+}
+.prog .fill::after {
+  content: ""; position: absolute; right: -1px; top: 50%;
+  width: 11px; height: 11px; border-radius: 50%; background: #fff;
+  transform: translateY(-50%); box-shadow: 0 0 10px var(--accent);
+  animation: pulse 1.3s ease-in-out infinite;
+}
+.prog .fill[style*="width: 0%"]::after { display: none; }
+
+/* Ligne d'habitude "classique + lueur" */
+.habit {
+  display: flex; align-items: center; gap: 13px; padding: 14px 15px;
+  border-radius: 14px; background: var(--card); border: 1px solid var(--line);
+  cursor: pointer; user-select: none;
+}
+.habit input { display: none; }
+.habit .box {
+  width: 25px; height: 25px; border-radius: 8px; border: 2px solid #ffffff26;
+  flex: none; display: grid; place-items: center; transition: .22s;
+}
+.habit .box svg { opacity: 0; transform: scale(.5); transition: .2s; }
+.habit input:checked + .box {
+  background: var(--accent); border-color: var(--accent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 75%, transparent);
+}
+.habit input:checked + .box svg { opacity: 1; transform: scale(1); }
+.habit .ic { font-size: 17px; }
+.habit .txt { flex: 1; font-size: 15px; color: var(--ink); transition: .2s; }
+.habit input:checked ~ .txt { color: var(--dim); text-decoration: line-through; }
+.habit .mini-strk { font-size: 12px; color: var(--dim); }
+.habit .del {
+  font-size: 18px; color: var(--dim); padding: 0 2px; line-height: 1;
+  opacity: .55; background: none; border: none;
+}
+
+/* État vide */
+.empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; gap: 16px; padding: 40px 20px;
+}
+.empty p { font-size: 14px; color: var(--dim); max-width: 260px; }
+
+/* Feuille de saisie : titre + champ libellé */
+.sheet__title { font-family: var(--head); font-weight: 700; font-size: 19px; margin-bottom: 14px; }
+.sheet .field { margin-bottom: 12px; }
+.sheet .field label {
+  display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
+  color: var(--dim); margin-bottom: 6px;
+}
+.emoji-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.emoji-row button {
+  width: 42px; height: 42px; border-radius: 11px; font-size: 20px;
+  background: #0e0e12; border: 1px solid var(--line);
+}
+.emoji-row button.on { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb,var(--accent) 25%,transparent); }
+
+/* Toast */
+.toast {
+  position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom));
+  transform: translateX(-50%) translateY(8px); z-index: 60;
+  background: var(--card); border: 1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+  border-radius: 99px; padding: 9px 16px; font-size: 13px; color: var(--ink);
+  opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Habitudes : zone haute statique + liste seule scrollable (brief §9.2) */
+#view[data-view="habitudes"] { overflow: hidden; }
+.hab { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.hab__top { flex: none; display: flex; flex-direction: column; gap: 11px; margin-bottom: 11px; }
+.hab__list { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 9px; padding-bottom: 8px; }
+.hab__list::-webkit-scrollbar { width: 0; }
+
+@keyframes grow { to { height: var(--h); } }
+@keyframes pulse { 0%,100% { opacity: .55; } 50% { opacity: 1; } }

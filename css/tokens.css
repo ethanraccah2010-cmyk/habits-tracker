@@ -1,0 +1,27 @@
+/* ============================================================
+   tokens.css — Design system (brief §6, repris des maquettes)
+   ============================================================ */
+:root {
+  /* Fonds & surfaces */
+  --bg:    #08090c;
+  --card:  #13151b;
+  --card2: #1a1d25;
+  --line:  #ffffff12;
+
+  /* Texte */
+  --ink: #EDEFF3;
+  --dim: #8b909c;
+
+  /* Couleur secondaire fixe (macros, tuiles sommeil) */
+  --blue: #5AA9E6;
+
+  /* Polices */
+  --ui:   'Inter', system-ui, -apple-system, sans-serif;
+  --head: 'Space Grotesk', 'Inter', sans-serif;
+
+  /* Accent par défaut (posé dynamiquement par le routeur via --accent) */
+  --accent: #8b7bff;
+}
+
+/* Carte d'accents par module (brief §6 — 3ᵉ colonne = valeur de lisibilité).
+   Utilisée côté JS pour poser --accent sur #app selon la vue. */

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pages 5–8 — maquettes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#08090c;--card:#13151b;--card2:#1a1d25;--line:#ffffff12;--ink:#EDEFF3;--dim:#8b909c;--ui:'Inter',system-ui,sans-serif;--head:'Space Grotesk','Inter',sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;padding:40px 24px 80px;background:radial-gradient(120% 50% at 50% 0%,#16181f 0%,#070809 60%);font-family:var(--ui);color:var(--ink)}
+  .deck-title{text-align:center;margin-bottom:14px}
+  .deck-title h1{font-family:var(--head);font-weight:700;font-size:24px;letter-spacing:-.4px}
+  .deck-title p{color:var(--dim);font-size:13px;margin-top:6px}
+  .warn{max-width:680px;margin:0 auto 30px;text-align:center;font-size:12px;color:#caa46a;background:#2a210f66;border:1px solid #EBB54D33;border-radius:12px;padding:9px 14px}
+  .row{display:flex;flex-wrap:wrap;gap:34px;justify-content:center;align-items:flex-start}
+  .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .cap{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--dim)}
+  .cap .sw{width:14px;height:14px;border-radius:5px}.cap b{color:var(--ink);font-weight:600}
+  .cap code{font-family:ui-monospace,monospace;font-size:11px;color:var(--dim)}
+  .phone{width:392px;height:838px;border-radius:46px;background:var(--bg);border:1px solid #ffffff14;box-shadow:0 40px 90px #000a,inset 0 0 0 6px #000;position:relative;overflow:hidden;display:flex;flex-direction:column}
+  .notch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:30px;background:#000;border-radius:0 0 18px 18px;z-index:5}
+  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:14px 26px 4px;font-size:13px;font-weight:600;color:var(--ink);flex:none}
+  .statusbar .r{display:flex;gap:6px;align-items:center;font-size:12px;opacity:.8}
+  .top{flex:none;padding:8px 16px 0}
+  .scroll{flex:1;display:flex;flex-direction:column;gap:11px;padding:8px 16px 0;overflow-y:auto;overflow-x:hidden}
+  .scroll::-webkit-scrollbar{width:0}
+  .pagetitle{font-family:var(--head);font-weight:700;font-size:22px;padding:2px;margin-bottom:4px}
+  .pagesub{font-size:12px;color:var(--dim);padding:0 2px 4px}
+  .seg{display:inline-flex;background:var(--card2);border-radius:9px;padding:3px}
+  .seg button{border:none;background:transparent;color:var(--dim);font-family:var(--ui);font-size:11px;padding:6px 12px;border-radius:7px;cursor:pointer;transition:.2s}
+  .seg button.on{background:var(--accent);color:#06120e;font-weight:600;box-shadow:0 0 9px color-mix(in srgb,var(--accent) 55%,transparent)}
+  .tabbar{display:flex;align-items:center;justify-content:space-around;flex:none;padding:10px 14px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:rgba(8,9,12,.92);backdrop-filter:blur(10px)}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;color:var(--dim)}
+  .tab.on{color:var(--accent)}.tab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+  .fab{width:48px;height:48px;border-radius:16px;border:none;background:var(--accent);display:grid;place-items:center;box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 45%,transparent);cursor:pointer;margin-top:-14px}
+  .fab svg{stroke:#06120e;stroke-width:2.6;fill:none}
+  .scrim{position:absolute;inset:0;background:rgba(4,5,8,.66);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:20;padding:22px}
+  .scrim.show{display:flex}
+  .modal{width:100%;background:var(--card);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);border-radius:22px;padding:18px;position:relative;animation:pop .25s cubic-bezier(.34,1.3,.64,1);max-height:90%;overflow-y:auto}
+  .modal::-webkit-scrollbar{width:0}
+  .mclose{position:absolute;top:12px;right:14px;width:26px;height:26px;border-radius:50%;border:none;background:var(--card2);color:var(--dim);font-size:16px;cursor:pointer;z-index:2}
+  .hide{display:none!important}
+
+  /* SPORT compact + saisie */
+  .sess{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px 16px;margin-bottom:4px}
+  .sess .t{font-family:var(--head);font-weight:700;font-size:17px}.sess .s{font-size:12px;color:var(--dim);margin-top:3px}
+  .sess .meta{display:flex;gap:14px;margin-top:11px;font-size:11px;color:var(--dim)}.sess .meta b{color:var(--accent);font-family:var(--head);font-size:15px}
+  .exoc{background:var(--card);border:1px solid var(--line);border-radius:16px;cursor:pointer}
+  .exoc .eh{display:flex;align-items:center;gap:12px;padding:14px 15px}
+  .exoc .anim{width:38px;height:38px;border-radius:11px;background:color-mix(in srgb,var(--accent) 16%,transparent);display:grid;place-items:center;font-size:19px;flex:none;animation:bob 1.8s ease-in-out infinite}
+  .exoc .en{flex:1;min-width:0}.exoc .en .n{font-size:15px}.exoc .en .sub{font-size:11px;color:var(--dim);margin-top:2px}
+  .exoc .en .sub b{color:var(--accent)}
+  .exoc .chart-btn{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--accent);display:grid;place-items:center;cursor:pointer;font-size:15px;flex:none}
+  .exoc.done{border-color:color-mix(in srgb,var(--accent) 35%,transparent)}
+  /* saisie séries */
+  .srow{display:grid;grid-template-columns:48px 1fr 1fr 28px;align-items:center;gap:8px;background:var(--card2);border-radius:10px;padding:8px 10px;margin-bottom:7px}
+  .srow .si{font-size:10px;color:var(--dim)}
+  .srow .field{display:flex;align-items:center;gap:5px;background:#0e0e12;border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+  .srow .field input{width:100%;background:none;border:none;color:var(--ink);font-size:14px;font-family:var(--head);font-weight:700;text-align:right;outline:none}
+  .srow .field span{font-size:10px;color:var(--dim)}
+  .srow .del{width:24px;height:24px;border-radius:7px;border:none;background:#ffffff10;color:var(--dim);cursor:pointer;font-size:15px}
+  .addset{width:100%;border:1px dashed #ffffff26;background:transparent;color:var(--dim);border-radius:10px;padding:9px;font-size:12px;cursor:pointer;font-family:var(--ui);margin-bottom:13px}
+  .savestat{display:flex;justify-content:space-between;gap:12px;background:color-mix(in srgb,var(--accent) 10%,transparent);border-radius:11px;padding:11px 13px;margin-bottom:13px;font-size:12px;color:var(--dim)}
+  .savestat b{font-family:var(--head);color:var(--accent);font-size:16px;display:block}
+  .saveb{width:100%;background:var(--accent);color:#06120e;border:none;border-radius:11px;padding:12px;font-weight:600;font-size:14px;cursor:pointer;font-family:var(--ui)}
+  .algo-note{font-size:10px;color:#caa46a;margin-top:10px;line-height:1.4}
+
+  /* SOMMEIL */
+  .bedhero{display:flex;align-items:center;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:11px}
+  .bedhero .moon{font-size:40px;filter:drop-shadow(0 0 12px color-mix(in srgb,var(--accent) 55%,transparent))}
+  .bedhero .lab{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim)}
+  .bedhero .big{font-family:var(--head);font-weight:700;font-size:30px;color:var(--accent);text-shadow:0 0 12px color-mix(in srgb,var(--accent) 45%,transparent);line-height:1.1}
+  .bedhero .sub{font-size:11px;color:var(--dim);margin-top:4px}
+  .sl2{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px}
+  .scard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px 14px}
+  .scard .l{font-size:9px;text-transform:uppercase;letter-spacing:1.2px;color:var(--dim)}
+  .scard .b{font-family:var(--head);font-weight:700;font-size:22px;margin-top:6px}.scard.debt .b{color:#EBB54D}
+  .hyp{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:15px 16px 12px}
+  .hyp .tt{font-size:13px;font-weight:500;margin-bottom:10px;display:block}
+  .nightsel{display:flex;gap:7px;overflow-x:auto;padding-bottom:9px;margin-bottom:4px}
+  .nightsel::-webkit-scrollbar{height:0}
+  .nightsel button{flex:none;border:1px solid var(--line);background:var(--card2);color:var(--dim);border-radius:11px;padding:8px 13px;cursor:pointer;font-family:var(--ui);text-align:center;line-height:1.2;min-width:52px}
+  .nightsel button .dd{font-family:var(--head);font-weight:700;font-size:14px;color:var(--ink)}
+  .nightsel button .dn{font-size:9px}
+  .nightsel button.on{background:var(--accent);border-color:var(--accent);box-shadow:0 0 9px color-mix(in srgb,var(--accent) 50%,transparent)}
+  .nightsel button.on .dd,.nightsel button.on .dn{color:#06120e}
+  .hyp .legend{display:flex;gap:11px;flex-wrap:wrap;margin-top:8px;font-size:9px;color:var(--dim)}
+  .hyp .legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}
+  .hh2{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .slc{width:100%;height:84px;display:block}
+  .slc .ln{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linecap:round;filter:drop-shadow(0 0 5px var(--accent));stroke-dasharray:700;stroke-dashoffset:700;animation:draw 1.4s .1s ease forwards}
+  .slc .ar{opacity:0;animation:fade .6s .9s ease forwards}
+  .slx{display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-top:5px}
+
+  /* BUSINESS */
+  .prospect{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px;cursor:pointer}
+  .prospect .pt{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+  .prospect .co{font-family:var(--head);font-weight:700;font-size:16px}
+  .prospect .st{font-size:10px;font-weight:600;padding:4px 9px;border-radius:99px}
+  .st-neg{color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent)}
+  .st-pro{color:#8b909c;background:#ffffff10}.st-win{color:#1c9b66;background:#1c9b6622}
+  .prospect .sec{font-size:11px;color:var(--dim);margin-bottom:11px}
+  .prospect .nx{display:flex;align-items:center;gap:8px;font-size:13px;border-top:1px solid var(--line);padding-top:11px}
+  .prospect .nx .ic{color:var(--accent)}.prospect .nx .dt{margin-left:auto;font-size:11px;color:var(--dim)}
+  .fiche .co{font-family:var(--head);font-weight:700;font-size:20px;padding-right:30px}
+  .fiche .row{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .fiche .k{color:var(--dim);white-space:nowrap}.fiche .vv{color:var(--ink);text-align:right}.fiche a{color:var(--accent);text-decoration:none}
+  .fiche .modbtn{margin-top:14px;width:100%;background:var(--accent);color:#06120e;border:none;border-radius:11px;padding:12px;font-weight:600;font-size:14px;cursor:pointer;font-family:var(--ui)}
+  .edit label{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--dim);display:block;margin:10px 0 4px}
+  .edit input,.edit select{width:100%;background:#0e0e12;border:1px solid var(--line);border-radius:9px;padding:9px 11px;color:var(--ink);font-size:13px;font-family:var(--ui)}
+  .edit input:focus,.edit select:focus{outline:none;border-color:var(--accent)}
+  .edit .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .edit .save{margin-top:14px;width:100%;background:var(--accent);color:#06120e;border:none;border-radius:11px;padding:12px;font-weight:600;font-size:14px;cursor:pointer;font-family:var(--ui)}
+
+  /* DEVOIRS / NOTES */
+  .hw{display:flex;gap:13px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--imp,#8b909c);border-radius:14px;padding:13px 15px}
+  .hw .main{flex:1;min-width:0}
+  .hw .top2{display:flex;align-items:center;gap:9px}
+  .hw .mat{font-family:var(--head);font-weight:700;font-size:15px}
+  .hw .imp{font-size:9px;text-transform:uppercase;letter-spacing:1px;font-weight:600;color:var(--imp,#8b909c)}
+  .hw .chap{font-size:12px;color:var(--ink);margin:5px 0 8px}
+  .hw .rev{font-size:11px;color:var(--dim)}.hw .rev b{color:var(--ink)}
+  .hw .date{flex:none;width:58px;border-radius:12px;background:var(--card2);text-align:center;padding:8px 0;align-self:flex-start}
+  .hw .date .jx{font-size:9px;text-transform:uppercase;letter-spacing:1px;font-weight:700;color:var(--ddc,#8b909c)}
+  .hw .date .dd{font-family:var(--head);font-weight:700;font-size:22px;line-height:1.1}
+  .hw .date .dm{font-size:10px;color:var(--dim)}
+  .subj{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px;cursor:pointer}
+  .subj .top2{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
+  .subj .name{font-size:14px}.subj .avg{font-family:var(--head);font-weight:700;font-size:18px}
+  .subj .avg .obj{font-size:11px;color:var(--dim);font-weight:400;font-family:var(--ui)}
+  .subj .track{height:7px;border-radius:99px;background:#ffffff10;overflow:visible;position:relative}
+  .subj .fill{height:100%;border-radius:99px;background:var(--accent)}
+  .subj .objmark{position:absolute;top:-2px;width:2px;height:11px;background:#fff8}
+  .grade{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px 14px}
+  .grade .g{font-family:var(--head);font-weight:700;font-size:20px;width:62px;flex:none}.grade .g .max{font-size:11px;color:var(--dim);font-weight:400}
+  .grade .gi{flex:1}.grade .gt{font-size:13px}.grade .gc{font-size:10.5px;color:var(--dim);margin-top:2px}
+  .trie{margin-bottom:2px}
+  .mh{font-family:var(--head);font-weight:700;font-size:18px;padding-right:30px}
+  .mh .ma{font-size:12px;color:var(--dim);font-weight:400;font-family:var(--ui);margin-top:3px}
+
+  @keyframes grow{to{height:var(--h)}}@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+  @keyframes draw{to{stroke-dashoffset:0}}@keyframes fade{to{opacity:1}}@keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+  @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important}}
+</style>
+
+<div class="deck-title"><h1>Pilotage de vie — pages 5 à 8</h1><p>Sport · Sommeil · Business · Devoirs &amp; Notes</p></div>
+<div class="warn">⚠️ Données simulées (courbes, hypnogramme, notes). Le 1RM utilise la formule d'Epley, fiable surtout sous ~12 reps.</div>
+
+<div class="row">
+
+  <!-- PAGE 5 SPORT -->
+  <div class="frame">
+    <div class="cap"><span class="sw" style="background:#df2020"></span><b>5 · Sport</b><code>#df2020</code></div>
+    <div class="phone" style="--accent:#ff4d4d">
+      <div class="notch"></div><div class="statusbar"><span>9:41</span><span class="r">5G ▮▮▮ 84%</span></div>
+      <div class="top"><div class="pagetitle">Sport</div></div>
+      <div class="scroll" style="padding-top:8px">
+        <div class="sess"><div class="t">Séance du jour — Push</div><div class="s">Pectoraux · épaules · triceps</div><div class="meta"><span><b>5</b> exos</span><span><b>~50</b> min</span><span><b id="sport-done">1</b> fait</span></div></div>
+        <div class="exoc" data-exo data-name="Développé couché" data-target="4 séries × 8 · barre" data-series="[[8,60],[8,60],[7,62],[0,0]]"><div class="eh"><span class="anim">🏋️</span><div class="en"><div class="n">Développé couché</div><div class="sub" data-sub>4 séries × 8 · barre</div></div><button class="chart-btn" data-exo-chart>📈</button></div></div>
+        <div class="exoc" data-exo data-name="Développé incliné haltères" data-target="3 séries × 10" data-series="[[10,22],[0,0],[0,0]]"><div class="eh"><span class="anim">💪</span><div class="en"><div class="n">Développé incliné haltères</div><div class="sub" data-sub>3 séries × 10</div></div><button class="chart-btn" data-exo-chart>📈</button></div></div>
+        <div class="exoc" data-exo data-name="Dips lestés" data-target="3 séries × max" data-series="[[12,15],[0,0],[0,0]]"><div class="eh"><span class="anim">🤸</span><div class="en"><div class="n">Dips lestés</div><div class="sub" data-sub>3 séries × max</div></div><button class="chart-btn" data-exo-chart>📈</button></div></div>
+        <div class="exoc" data-exo data-name="Élévations latérales" data-target="4 séries × 15" data-series="[[15,10],[0,0],[0,0],[0,0]]"><div class="eh"><span class="anim">🏋️</span><div class="en"><div class="n">Élévations latérales</div><div class="sub" data-sub>4 séries × 15</div></div><button class="chart-btn" data-exo-chart>📈</button></div></div>
+        <div class="exoc" data-exo data-name="Extensions triceps poulie" data-target="3 séries × 12" data-series="[[12,30],[0,0],[0,0]]"><div class="eh"><span class="anim">💪</span><div class="en"><div class="n">Extensions triceps poulie</div><div class="sub" data-sub>3 séries × 12</div></div><button class="chart-btn" data-exo-chart>📈</button></div></div>
+        <div style="height:8px"></div>
+      </div>
+      <!-- popup saisie séries -->
+      <div class="scrim" data-entry-scrim>
+        <div class="modal"><button class="mclose" data-mclose>×</button>
+          <div style="font-family:var(--head);font-weight:700;font-size:17px;margin-bottom:3px" data-entry-title>Exercice</div>
+          <div style="font-size:11px;color:var(--dim);margin-bottom:14px" data-entry-target>—</div>
+          <div data-entry-rows></div>
+          <button class="addset" data-addset>＋ Ajouter une série</button>
+          <div class="savestat"><div>1RM estimé<b data-entry-1rm>—</b></div><div style="text-align:right">Volume total<b data-entry-vol>—</b></div></div>
+          <button class="saveb" data-entry-save>Enregistrer</button>
+          <div class="algo-note">Le 1RM estimé suit la formule d'Epley (kg × (1 + reps/30)). Fiable surtout sous ~12 reps ; au-delà, c'est une approximation.</div>
+        </div>
+      </div>
+      <!-- popup graphique évolution -->
+      <div class="scrim" data-exo-scrim>
+        <div class="modal"><button class="mclose" data-mclose>×</button>
+          <div style="font-family:var(--head);font-weight:700;font-size:17px;margin-bottom:3px" data-exo-title>Exercice</div>
+          <div style="font-size:11px;color:var(--dim);margin-bottom:12px">1RM estimé (Epley) · <span data-exo-trend style="font-weight:600"></span> · <span style="color:#caa46a">simulé</span></div>
+          <div class="seg" data-exo-seg style="margin-bottom:12px"><button class="on" data-k="1S">1S</button><button data-k="1M">1M</button><button data-k="6M">6M</button><button data-k="1A">1an</button></div>
+          <svg data-exo-svg viewBox="0 0 300 120" style="width:100%;height:120px"><defs><linearGradient id="eg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".35"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs><path data-exo-area fill="url(#eg)"></path><path data-exo-line fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" style="filter:drop-shadow(0 0 5px var(--accent))"></path></svg>
+          <div data-exo-x style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-top:5px"></div>
+        </div>
+      </div>
+      <div class="tabbar"><div class="tab on"><svg viewBox="0 0 24 24"><path d="M6 7v10M18 7v10M4 9v6M20 9v6M6 12h12"/></svg>Sport</div><div class="tab"><svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>Sommeil</div><button class="fab"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button><div class="tab"><svg viewBox="0 0 24 24"><path d="M3 3v18h18M7 14l4-4 3 3 5-6"/></svg>Business</div><div class="tab"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/></svg>Devoirs</div></div>
+    </div>
+  </div>
+
+  <!-- PAGE 6 SOMMEIL -->
+  <div class="frame">
+    <div class="cap"><span class="sw" style="background:#8accff"></span><b>6 · Sommeil</b><code>#8accff</code></div>
+    <div class="phone" style="--accent:#8accff">
+      <div class="notch"></div><div class="statusbar"><span>9:41</span><span class="r">5G ▮▮▮ 84%</span></div>
+      <div class="top"><div class="pagetitle">Sommeil</div></div>
+      <div class="scroll" style="padding-top:8px">
+        <div class="bedhero"><span class="moon">🌙</span><div><div class="lab">Au lit ce soir</div><div class="big">23 h 05</div><div class="sub">réveil 7 h 00 · pour 7 h 55 de sommeil</div></div></div>
+        <div class="sl2"><div class="scard"><div class="l">Moyenne 7 j</div><div class="b">7 h 12</div></div><div class="scard debt"><div class="l">Dette de sommeil</div><div class="b">−40 min</div></div></div>
+        <div class="hyp">
+          <span class="tt">Détail de la nuit</span>
+          <div class="nightsel" data-nightsel></div>
+          <svg data-hypno viewBox="0 0 300 110" style="width:100%;height:110px"></svg>
+          <div class="legend"><span><i style="background:#ff7a7a"></i>Éveil</span><span><i style="background:#c4a4ff"></i>Paradoxal</span><span><i style="background:#8accff"></i>Léger</span><span><i style="background:#3a6fb0"></i>Profond</span></div>
+        </div>
+        <div class="hyp">
+          <div class="hh2"><span class="tt" style="margin:0">Temps de sommeil</span><div class="seg" data-dur-seg><button class="on" data-k="1S">1S</button><button data-k="2S">2S</button><button data-k="1M">1M</button><button data-k="3M">3M</button></div></div>
+          <svg class="slc" data-durline viewBox="0 0 300 80" preserveAspectRatio="none"><defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".34"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs><path class="ar" fill="url(#sg)"></path><path class="ln"></path></svg>
+          <div class="slx" data-durx></div>
+        </div>
+        <div style="height:8px"></div>
+      </div>
+      <div class="tabbar"><div class="tab"><svg viewBox="0 0 24 24"><path d="M6 7v10M18 7v10M4 9v6M20 9v6M6 12h12"/></svg>Sport</div><div class="tab on"><svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>Sommeil</div><button class="fab"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button><div class="tab"><svg viewBox="0 0 24 24"><path d="M3 3v18h18M7 14l4-4 3 3 5-6"/></svg>Business</div><div class="tab"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/></svg>Devoirs</div></div>
+    </div>
+  </div>
+
+  <!-- PAGE 7 BUSINESS -->
+  <div class="frame">
+    <div class="cap"><span class="sw" style="background:#ff6b9d"></span><b>7 · Business</b><code>#ff6b9d</code></div>
+    <div class="phone" style="--accent:#ff6b9d">
+      <div class="notch"></div><div class="statusbar"><span>9:41</span><span class="r">5G ▮▮▮ 84%</span></div>
+      <div class="top"><div class="pagetitle">Business</div><div class="pagesub">7 prospects · 2 en négociation</div></div>
+      <div class="scroll" style="padding-top:8px">
+        <div class="prospect" data-prospect data-co="Café Lomi" data-ger="Claire Lomi" data-tel="06 12 34 56 78 · claire@lomi.fr" data-sec="Restauration" data-demo="https://demo.app/cafe-lomi" data-date="12 juin" data-stat="Négociation" data-next="Relancer mardi par téléphone"><div class="pt"><span class="co">Café Lomi</span><span class="st st-neg">Négociation</span></div><div class="sec">Restauration · Claire Lomi</div><div class="nx"><span class="ic">→</span>Relancer mardi<span class="dt">12 juin</span></div></div>
+        <div class="prospect" data-prospect data-co="Studio Nova" data-ger="Marc Petit" data-tel="07 88 77 66 55 · marc@studionova.fr" data-sec="Photographie" data-demo="https://demo.app/studio-nova" data-date="20 juin" data-stat="Prospect" data-next="Envoyer la démo"><div class="pt"><span class="co">Studio Nova</span><span class="st st-pro">Prospect</span></div><div class="sec">Photographie · Marc Petit</div><div class="nx"><span class="ic">→</span>Envoyer la démo<span class="dt">20 juin</span></div></div>
+        <div class="prospect" data-prospect data-co="Garage Belle" data-ger="Sofia Belle" data-tel="06 44 33 22 11 · sofia@garagebelle.fr" data-sec="Automobile" data-demo="https://demo.app/garage-belle" data-date="8 juin" data-stat="Négociation" data-next="Préparer le devis final"><div class="pt"><span class="co">Garage Belle</span><span class="st st-neg">Négociation</span></div><div class="sec">Automobile · Sofia Belle</div><div class="nx"><span class="ic">→</span>Préparer le devis<span class="dt">8 juin</span></div></div>
+        <div class="prospect" data-prospect data-co="Fleurs & Co" data-ger="Léa Roy" data-tel="07 11 22 33 44 · lea@fleursco.fr" data-sec="Commerce" data-demo="https://demo.app/fleurs-co" data-date="2 juin" data-stat="Gagné" data-next="Lancer la production"><div class="pt"><span class="co">Fleurs &amp; Co</span><span class="st st-win">Gagné</span></div><div class="sec">Commerce · Léa Roy</div><div class="nx"><span class="ic">→</span>Lancer la production<span class="dt">2 juin</span></div></div>
+        <div style="height:8px"></div>
+      </div>
+      <div class="scrim" data-fiche-scrim>
+        <div class="modal"><button class="mclose" data-mclose>×</button>
+          <div data-view>
+            <div class="fiche"><div class="co" data-f="co">—</div><div style="margin-top:12px">
+              <div class="row"><span class="k">Gérant</span><span class="vv" data-f="ger">—</span></div>
+              <div class="row"><span class="k">Tél / Mail</span><span class="vv" data-f="tel">—</span></div>
+              <div class="row"><span class="k">Secteur</span><span class="vv" data-f="sec">—</span></div>
+              <div class="row"><span class="k">Démo envoyée</span><span class="vv"><a data-f="demo" href="#">Voir le lien ↗</a></span></div>
+              <div class="row"><span class="k">Date de contact</span><span class="vv" data-f="date">—</span></div>
+              <div class="row"><span class="k">Statut</span><span class="vv" data-f="stat">—</span></div>
+              <div class="row"><span class="k">Prochaine action</span><span class="vv" data-f="next">—</span></div>
+            </div><button class="modbtn" data-modifier>Modifier</button></div>
+          </div>
+          <div data-editview class="edit hide">
+            <div style="font-family:var(--head);font-weight:700;font-size:17px;margin-bottom:6px">Modifier le prospect</div>
+            <label>Entreprise</label><input data-e="co">
+            <div class="g2"><div><label>Gérant</label><input data-e="ger"></div><div><label>Secteur</label><input data-e="sec"></div></div>
+            <label>Tél / Mail</label><input data-e="tel">
+            <div class="g2"><div><label>Date de contact</label><input data-e="date"></div><div><label>Statut</label><select data-e="stat"><option>Prospect</option><option>Négociation</option><option>Gagné</option><option>Perdu</option></select></div></div>
+            <label>Démo envoyée (lien)</label><input data-e="demo">
+            <label>Prochaine action</label><input data-e="next">
+            <button class="save" data-save>Enregistrer</button>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar"><div class="tab"><svg viewBox="0 0 24 24"><path d="M6 7v10M18 7v10M4 9v6M20 9v6M6 12h12"/></svg>Sport</div><div class="tab"><svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>Sommeil</div><button class="fab"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button><div class="tab on"><svg viewBox="0 0 24 24"><path d="M3 3v18h18M7 14l4-4 3 3 5-6"/></svg>Business</div><div class="tab"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/></svg>Devoirs</div></div>
+    </div>
+  </div>
+
+  <!-- PAGE 8 DEVOIRS / NOTES -->
+  <div class="frame">
+    <div class="cap"><span class="sw" style="background:#f5ebcc"></span><b>8 · Devoirs &amp; notes</b><code>#f5ebcc</code></div>
+    <div class="phone" style="--accent:#f5ebcc">
+      <div class="notch"></div><div class="statusbar"><span>9:41</span><span class="r">5G ▮▮▮ 84%</span></div>
+      <div class="top"><div class="pagetitle">Devoirs &amp; notes</div><div class="seg" data-dn-seg style="margin:6px 0 4px"><button class="on" data-v="dev">Devoirs</button><button data-v="notes">Notes</button></div></div>
+      <!-- DEVOIRS -->
+      <div class="scroll" data-dn="dev" style="padding-top:11px">
+        <div class="hw" style="--imp:#ff5d5d"><div class="main"><div class="top2"><span class="mat">Histoire</span><span class="imp">Important</span></div><div class="chap">Chap. 6 — La Révolution française</div><div class="rev">🔁 prochaine révision <b>demain</b></div></div><div class="date" style="--ddc:#ff5d5d"><div class="jx">J-1</div><div class="dd">28</div><div class="dm">juin</div></div></div>
+        <div class="hw" style="--imp:#EBB54D"><div class="main"><div class="top2"><span class="mat">Maths</span><span class="imp">Moyen</span></div><div class="chap">Exercices 12 à 18 — dérivées</div><div class="rev">🔁 prochaine révision <b>dim.</b></div></div><div class="date" style="--ddc:#EBB54D"><div class="jx">J-4</div><div class="dd">1</div><div class="dm">juil.</div></div></div>
+        <div class="hw" style="--imp:#1c9b66"><div class="main"><div class="top2"><span class="mat">Anglais</span><span class="imp">Léger</span></div><div class="chap">Essay — "My future career"</div><div class="rev">🔁 prochaine révision <b>lun.</b></div></div><div class="date" style="--ddc:#8b909c"><div class="jx">J-5</div><div class="dd">2</div><div class="dm">juil.</div></div></div>
+        <div class="hw" style="--imp:#ff5d5d"><div class="main"><div class="top2"><span class="mat">Physique</span><span class="imp">Important</span></div><div class="chap">DM — Mécanique du point</div><div class="rev">🔁 prochaine révision <b>mar.</b></div></div><div class="date" style="--ddc:#8b909c"><div class="jx">J-6</div><div class="dd">3</div><div class="dm">juil.</div></div></div>
+        <div style="height:8px"></div>
+      </div>
+      <!-- NOTES -->
+      <div class="scroll hide" data-dn="notes" style="padding-top:11px">
+        <div class="trie"><div class="seg" data-tri-seg><button class="on" data-t="recent">Dernières notes</button><button data-t="mat">Par matière</button></div></div>
+        <div data-tri="recent" style="display:flex;flex-direction:column;gap:11px">
+          <div class="grade"><div class="g">16<span class="max">/20</span></div><div class="gi"><div class="gt">Histoire — Révolution</div><div class="gc">moyenne classe 11,8</div></div></div>
+          <div class="grade"><div class="g">13<span class="max">/20</span></div><div class="gi"><div class="gt">Maths — Suites</div><div class="gc">moyenne classe 9,4</div></div></div>
+          <div class="grade"><div class="g">15<span class="max">/20</span></div><div class="gi"><div class="gt">Anglais — Oral</div><div class="gc">moyenne classe 13,1</div></div></div>
+          <div class="grade"><div class="g">11<span class="max">/20</span></div><div class="gi"><div class="gt">Physique — Forces</div><div class="gc">moyenne classe 10,2</div></div></div>
+          <div class="grade"><div class="g">14<span class="max">/20</span></div><div class="gi"><div class="gt">Maths — Dérivées</div><div class="gc">moyenne classe 8,9</div></div></div>
+          <div class="grade"><div class="g">17<span class="max">/20</span></div><div class="gi"><div class="gt">Histoire — Empire</div><div class="gc">moyenne classe 12,5</div></div></div>
+        </div>
+        <div data-tri="mat" class="hide" style="display:flex;flex-direction:column;gap:11px">
+          <div class="subj" data-subj="Histoire"><div class="top2"><span class="name">Histoire</span><span class="avg">14,2 <span class="obj">/ obj. 15</span></span></div><div class="track"><div class="fill" style="width:71%"></div><div class="objmark" style="left:75%"></div></div></div>
+          <div class="subj" data-subj="Maths"><div class="top2"><span class="name">Maths</span><span class="avg">11,6 <span class="obj">/ obj. 13</span></span></div><div class="track"><div class="fill" style="width:58%"></div><div class="objmark" style="left:65%"></div></div></div>
+          <div class="subj" data-subj="Anglais"><div class="top2"><span class="name">Anglais</span><span class="avg">15,0 <span class="obj">/ obj. 15</span></span></div><div class="track"><div class="fill" style="width:75%"></div><div class="objmark" style="left:75%"></div></div></div>
+          <div class="subj" data-subj="Physique"><div class="top2"><span class="name">Physique</span><span class="avg">12,8 <span class="obj">/ obj. 14</span></span></div><div class="track"><div class="fill" style="width:64%"></div><div class="objmark" style="left:70%"></div></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;background:color-mix(in srgb,var(--accent) 14%,var(--card));border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:14px;padding:14px 16px;margin-top:3px"><span style="font-size:13px;font-weight:600">Moyenne générale</span><span style="font-family:var(--head);font-weight:700;font-size:22px">13,4 <span style="font-size:12px;color:var(--dim);font-weight:400;font-family:var(--ui)">/ 20</span></span></div>
+        </div>
+        <div style="height:8px"></div>
+      </div>
+      <!-- popup matière -->
+      <div class="scrim" data-subj-scrim>
+        <div class="modal"><button class="mclose" data-mclose>×</button>
+          <div class="mh" data-subj-name>Matière<div class="ma" data-subj-meta></div></div>
+          <div data-subj-list style="display:flex;flex-direction:column;gap:9px;margin-top:14px"></div>
+        </div>
+      </div>
+      <div class="tabbar"><div class="tab"><svg viewBox="0 0 24 24"><path d="M6 7v10M18 7v10M4 9v6M20 9v6M6 12h12"/></svg>Sport</div><div class="tab"><svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>Sommeil</div><button class="fab"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button><div class="tab"><svg viewBox="0 0 24 24"><path d="M3 3v18h18M7 14l4-4 3 3 5-6"/></svg>Business</div><div class="tab on"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/></svg>Devoirs</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ===== util 1RM Epley ===== */
+const e1rm=(reps,kg)=>kg>0&&reps>0?kg*(1+reps/30):0;
+
+/* ===== SPORT : popup saisie séries ===== */
+document.querySelectorAll('.phone').forEach(ph=>{
+  const es=ph.querySelector('[data-entry-scrim]');if(!es)return;
+  const rowsEl=es.querySelector('[data-entry-rows]'),titleEl=es.querySelector('[data-entry-title]'),targetEl=es.querySelector('[data-entry-target]');
+  const oneRmEl=es.querySelector('[data-entry-1rm]'),volEl=es.querySelector('[data-entry-vol]');
+  let cur=null;
+  function rowHTML(r,k){return `<div class="srow"><span class="si">Série ${r+1}</span><div class="field"><input type="number" data-reps value="${k[0]||''}"><span>reps</span></div><div class="field"><input type="number" data-kg value="${k[1]||''}"><span>kg</span></div><button class="del" data-del>×</button></div>`;}
+  function recalc(){const rows=[...rowsEl.querySelectorAll('.srow')];let best=0,vol=0;rows.forEach(rw=>{const reps=+rw.querySelector('[data-reps]').value||0,kg=+rw.querySelector('[data-kg]').value||0;vol+=reps*kg;best=Math.max(best,e1rm(reps,kg));});oneRmEl.textContent=best?best.toFixed(1)+' kg':'—';volEl.textContent=vol?vol.toLocaleString('fr-FR')+' kg':'—';return{best,vol,n:rows.filter(rw=>(+rw.querySelector('[data-reps]').value||0)>0).length};}
+  function renumber(){[...rowsEl.querySelectorAll('.srow .si')].forEach((s,i)=>s.textContent='Série '+(i+1));}
+  function bind(){rowsEl.querySelectorAll('input').forEach(i=>i.oninput=recalc);rowsEl.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{b.closest('.srow').remove();renumber();recalc();});}
+  function open(exo){cur=exo;titleEl.textContent=exo.dataset.name;targetEl.textContent='Objectif : '+exo.dataset.target;
+    const series=JSON.parse(exo.dataset.series);rowsEl.innerHTML=series.map((k,r)=>rowHTML(r,k)).join("");bind();recalc();es.classList.add('show');}
+  ph.querySelectorAll('[data-exo]').forEach(exo=>exo.addEventListener('click',e=>{if(e.target.closest('[data-exo-chart]'))return;open(exo);}));
+  es.querySelector('[data-addset]').onclick=()=>{const r=rowsEl.querySelectorAll('.srow').length;rowsEl.insertAdjacentHTML('beforeend',rowHTML(r,[ '','' ]));bind();recalc();};
+  es.querySelector('[data-entry-save]').onclick=()=>{const st=recalc();const series=[...rowsEl.querySelectorAll('.srow')].map(rw=>[+rw.querySelector('[data-reps]').value||0,+rw.querySelector('[data-kg]').value||0]);cur.dataset.series=JSON.stringify(series);cur.classList.add('done');cur.querySelector('[data-sub]').innerHTML=`${st.n} séries · 1RM est. <b>${st.best.toFixed(0)} kg</b>`;document.getElementById('sport-done').textContent=ph.querySelectorAll('.exoc.done').length;es.classList.remove('show');};
+  es.addEventListener('click',e=>{if(e.target===es||e.target.hasAttribute('data-mclose'))es.classList.remove('show');});
+});
+
+/* ===== SPORT : graphique évolution 1RM ===== */
+const EXO={"1S":[58,60,60,62],"1M":[55,57,58,60,60,62,62],"6M":[48,50,52,54,56,58,60,62],"1A":[40,43,45,48,50,53,56,58,60,62]};
+const EXOLAB={"1S":["S1","S2","S3","auj."],"1M":["","","","","","","auj."],"6M":["-6M","","","","","","","auj."],"1A":["-1an","","","","","","","","","auj."]};
+document.querySelectorAll('.phone').forEach(ph=>{
+  const scrim=ph.querySelector('[data-exo-scrim]');if(!scrim)return;
+  const line=scrim.querySelector('[data-exo-line]'),area=scrim.querySelector('[data-exo-area]'),xx=scrim.querySelector('[data-exo-x]'),title=scrim.querySelector('[data-exo-title]'),trend=scrim.querySelector('[data-exo-trend]');
+  const W=300,H=120,P=8;
+  function build(k){const d=EXO[k],n=d.length,mn=Math.min(...d)-3,mx=Math.max(...d)+3;const x=i=>P+i*((W-2*P)/(n-1)),y=v=>H-P-((v-mn)/(mx-mn))*(H-2*P);
+    let dd=`M${x(0)},${y(d[0]).toFixed(1)}`;for(let i=1;i<n;i++){const xc=(x(i-1)+x(i))/2;dd+=` C${xc.toFixed(1)},${y(d[i-1]).toFixed(1)} ${xc.toFixed(1)},${y(d[i]).toFixed(1)} ${x(i).toFixed(1)},${y(d[i]).toFixed(1)}`;}
+    line.setAttribute('d',dd);area.setAttribute('d',dd+` L${x(n-1).toFixed(1)},${H} L${P},${H} Z`);
+    line.style.strokeDasharray=900;line.style.strokeDashoffset=900;line.style.animation='none';void line.getBBox();line.style.animation='draw 1.2s ease forwards';
+    xx.innerHTML=(EXOLAB[k]||[]).map(l=>`<span>${l}</span>`).join("");
+    const diff=d[d.length-1]-d[0];trend.textContent=diff>1?`▲ +${diff.toFixed(0)} kg`:diff<-1?`▼ ${diff.toFixed(0)} kg`:'■ stable';trend.style.color=diff>1?'#3fd18a':diff<-1?'#ff6b6b':'#8b909c';}
+  scrim.querySelectorAll('[data-exo-seg] button').forEach(b=>b.onclick=()=>{scrim.querySelectorAll('[data-exo-seg] button').forEach(x=>x.classList.remove('on'));b.classList.add('on');build(b.dataset.k);});
+  ph.querySelectorAll('[data-exo-chart]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();title.textContent=btn.closest('[data-exo]').dataset.name;scrim.classList.add('show');scrim.querySelectorAll('[data-exo-seg] button').forEach(x=>x.classList.toggle('on',x.dataset.k==='1M'));build('1M');}));
+  scrim.addEventListener('click',e=>{if(e.target===scrim||e.target.hasAttribute('data-mclose'))scrim.classList.remove('show');});
+});
+
+/* ===== SOMMEIL : hypnogramme + sélecteur nuits ===== */
+const NIGHTS=[[2,3,3,2,1,2,3,3,2,1,2,2,1,0],[2,2,3,3,2,2,1,2,3,2,1,2,1,0],[1,2,3,3,3,2,2,1,2,2,1,2,0,0],[2,3,3,2,2,1,2,3,2,2,1,1,1,0],[2,2,3,3,2,1,1,2,2,3,2,1,1,0],[2,3,3,3,2,2,1,2,2,1,2,2,1,0]];
+const NIGHTLAB=[["28","jeu"],["27","mer"],["26","mar"],["25","lun"],["24","dim"],["23","sam"]];
+const STAGEC=["#ff7a7a","#c4a4ff","#8accff","#3a6fb0"];
+document.querySelectorAll('[data-hypno]').forEach(svg=>{
+  const ph=svg.closest('.phone');const sel=ph.querySelector('[data-nightsel]');const W=300,H=110,P=6,levels=4;
+  function draw(idx){const seq=NIGHTS[idx],n=seq.length;svg.innerHTML='';const bw=(W-2*P)/n,lh=(H-2*P)/(levels-1);
+    seq.forEach((lv,i)=>{const x=P+i*bw,y=P+lv*lh;const r=document.createElementNS('http://www.w3.org/2000/svg','rect');r.setAttribute('x',x);r.setAttribute('y',y-3);r.setAttribute('width',bw-1.5);r.setAttribute('height',6);r.setAttribute('rx',2);r.setAttribute('fill',STAGEC[lv]);r.setAttribute('opacity','.92');svg.appendChild(r);if(i>0){const py=P+seq[i-1]*lh;const l=document.createElementNS('http://www.w3.org/2000/svg','line');l.setAttribute('x1',x);l.setAttribute('y1',py);l.setAttribute('x2',x);l.setAttribute('y2',y);l.setAttribute('stroke','#ffffff22');l.setAttribute('stroke-width','1.5');svg.appendChild(l);}});}
+  NIGHTS.forEach((_,i)=>{const b=document.createElement('button');if(i===0)b.className='on';b.innerHTML=`<div class="dd">${NIGHTLAB[i][0]}</div><div class="dn">${NIGHTLAB[i][1]}</div>`;b.onclick=()=>{[...sel.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');draw(i);};sel.appendChild(b);});
+  draw(0);
+});
+
+/* ===== SOMMEIL : temps de sommeil en LINE CHART ===== */
+const DUR={"1S":[6.8,7.2,6.5,7.9,7.1,8.2,6.9],"2S":[7,6.6,7.4,7,8,6.8,7.2,6.9,7.5,7,8.1,6.7,7.3,7],"1M":[7.1,6.8,7.3,7,6.9,7.4,7.2,6.7,7.5,7,8,6.9,7.2,7.1,6.8,7.3],"3M":[6.9,7.1,7,7.3,6.8,7.2,7,7.4,6.9,7.1,7,7.5,6.8,7.2,7,7.3]};
+const DURLAB={"1S":["L","M","M","J","V","S","D"],"2S":["S-1","","","","","","","S","","","","","",""],"1M":["Sem1","","","Sem2","","","Sem3","","","Sem4","","","","","",""],"3M":["Avr","","","Mai","","","","Juin","","","","","","","",""]};
+document.querySelectorAll('[data-durline]').forEach(svg=>{
+  const ph=svg.closest('.phone');const ln=svg.querySelector('.ln'),ar=svg.querySelector('.ar'),xx=ph.querySelector('[data-durx]');const W=300,H=80,P=6;
+  function build(k){const d=DUR[k],n=d.length,mn=Math.min(...d)-.4,mx=Math.max(...d)+.4;const x=i=>P+i*((W-2*P)/(n-1)),y=v=>H-P-((v-mn)/(mx-mn))*(H-2*P);
+    let dd=`M${x(0)},${y(d[0]).toFixed(1)}`;for(let i=1;i<n;i++){const xc=(x(i-1)+x(i))/2;dd+=` C${xc.toFixed(1)},${y(d[i-1]).toFixed(1)} ${xc.toFixed(1)},${y(d[i]).toFixed(1)} ${x(i).toFixed(1)},${y(d[i]).toFixed(1)}`;}
+    ln.setAttribute('d',dd);ar.setAttribute('d',dd+` L${x(n-1).toFixed(1)},${H} L${P},${H} Z`);ln.style.animation='none';ar.style.animation='none';void ln.getBBox();ln.style.animation='';ar.style.animation='';
+    xx.innerHTML=(DURLAB[k]||[]).map(l=>`<span>${l}</span>`).join("");}
+  ph.querySelectorAll('[data-dur-seg] button').forEach(b=>b.onclick=()=>{ph.querySelectorAll('[data-dur-seg] button').forEach(x=>x.classList.remove('on'));b.classList.add('on');build(b.dataset.k);});
+  build("1S");
+});
+
+/* ===== BUSINESS ===== */
+document.querySelectorAll('.phone').forEach(ph=>{
+  const scrim=ph.querySelector('[data-fiche-scrim]');if(!scrim)return;
+  const view=scrim.querySelector('[data-view]'),edit=scrim.querySelector('[data-editview]');
+  function fill(d){scrim.querySelectorAll('[data-f]').forEach(el=>{const k=el.dataset.f;if(k==='demo'){el.textContent='Voir le lien ↗';el.href=d.demo;}else el.textContent=d[k]||'—';});scrim.querySelectorAll('[data-e]').forEach(el=>{el.value=d[el.dataset.e]||'';});}
+  ph.querySelectorAll('[data-prospect]').forEach(p=>p.addEventListener('click',()=>{fill(p.dataset);view.classList.remove('hide');edit.classList.add('hide');scrim.classList.add('show');}));
+  scrim.querySelector('[data-modifier]').addEventListener('click',()=>{view.classList.add('hide');edit.classList.remove('hide');});
+  scrim.querySelector('[data-save]').addEventListener('click',()=>{scrim.querySelectorAll('[data-e]').forEach(el=>{const f=scrim.querySelector(`[data-f="${el.dataset.e}"]`);if(f){if(el.dataset.e==='demo'){f.textContent='Voir le lien ↗';f.href=el.value;}else f.textContent=el.value;}});edit.classList.add('hide');view.classList.remove('hide');});
+  scrim.addEventListener('click',e=>{if(e.target===scrim||e.target.hasAttribute('data-mclose'))scrim.classList.remove('show');});
+});
+
+/* ===== DEVOIRS/NOTES segments + popup matière ===== */
+document.querySelectorAll('[data-dn-seg]').forEach(seg=>{const ph=seg.closest('.phone');seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{seg.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');ph.querySelectorAll('[data-dn]').forEach(v=>v.classList.toggle('hide',v.dataset.dn!==b.dataset.v));});});
+document.querySelectorAll('[data-tri-seg]').forEach(seg=>{const root=seg.closest('[data-dn="notes"]');seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{seg.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');root.querySelectorAll('[data-tri]').forEach(v=>v.classList.toggle('hide',v.dataset.tri!==b.dataset.t));});});
+
+const SUBJ={
+ "Histoire":{avg:"14,2",obj:"15",cls:"11,8",notes:[["16","Révolution","11,8"],["17","Empire","12,5"],["12","Moyen Âge","10,9"],["14","1789","11,2"]]},
+ "Maths":{avg:"11,6",obj:"13",cls:"9,4",notes:[["13","Suites","9,4"],["14","Dérivées","8,9"],["9","Probas","9,1"],["11","Vecteurs","10,0"]]},
+ "Anglais":{avg:"15,0",obj:"15",cls:"13,1",notes:[["15","Oral","13,1"],["16","Essay","12,8"],["14","Listening","13,5"]]},
+ "Physique":{avg:"12,8",obj:"14",cls:"10,2",notes:[["11","Forces","10,2"],["14","Énergie","11,0"],["13","Ondes","9,8"]]}
+};
+document.querySelectorAll('[data-subj-scrim]').forEach(scrim=>{
+  const ph=scrim.closest('.phone');const nameEl=scrim.querySelector('[data-subj-name]'),metaEl=scrim.querySelector('[data-subj-meta]'),listEl=scrim.querySelector('[data-subj-list]');
+  ph.querySelectorAll('[data-subj]').forEach(s=>s.addEventListener('click',()=>{
+    const d=SUBJ[s.dataset.subj];nameEl.childNodes[0].textContent=s.dataset.subj;
+    metaEl.textContent=`Moyenne ${d.avg} / 20 · objectif ${d.obj} · moyenne classe ${d.cls}`;
+    listEl.innerHTML=d.notes.map(n=>`<div class="grade"><div class="g">${n[0]}<span class="max">/20</span></div><div class="gi"><div class="gt">${n[1]}</div><div class="gc">moyenne classe ${n[2]}</div></div></div>`).join("");
+    scrim.classList.add('show');
+  }));
+  scrim.addEventListener('click',e=>{if(e.target===scrim||e.target.hasAttribute('data-mclose'))scrim.classList.remove('show');});
+});
+</script>
