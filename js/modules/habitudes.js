@@ -185,10 +185,41 @@ function paintTop() {
     <div class="prog">
       <div class="ph">
         <span class="pt"><b id="hab-count">${done}</b> / <span>${total}</span> habitudes</span>
-        <span class="flame">🔥 <b>${streak}</b> j</span>
+        <span class="flame">🔥 <b id="hab-flame">${streak}</b> j</span>
       </div>
-      <div class="track"><div class="fill" id="hab-fill" style="width:${(done / total * 100).toFixed(0)}%"></div></div>
+      <div class="track"><div class="fill" id="hab-fill" style="width:0%"></div></div>
     </div>`;
+
+  // Anime la barre de 0 → cible au montage / changement de période (transition CSS).
+  requestAnimationFrame(() => {
+    const f = $('#hab-fill');
+    if (f) f.style.width = (done / total * 100).toFixed(0) + '%';
+  });
+}
+
+/* Mise à jour EN PLACE (sans recréer les éléments) → la transition joue. */
+function updateProgress() {
+  const total = habits.length, done = todayCount(), streak = globalStreak();
+  const c = $('#hab-count'); if (c) c.textContent = done;
+  const fl = $('#hab-flame'); if (fl) fl.textContent = streak;
+  const f = $('#hab-fill'); if (f) f.style.width = (total ? done / total * 100 : 0).toFixed(0) + '%';
+}
+
+function updateBarsHeights() {
+  const wrap = $('#hab-bars'); if (!wrap) return;
+  const buckets = buildBuckets();
+  const mx = Math.max(1, ...buckets.map(b => b.count));
+  [...wrap.querySelectorAll('.b')].forEach((el, i) => {
+    const b = buckets[i]; if (!b) return;
+    const h = b.count === 0 ? 4 : Math.round(28 + (b.count / mx) * 60);
+    el.style.animation = 'none';        // libère la hauteur du keyframe "grow"
+    el.style.height = h + 'px';         // transition height ease-out
+  });
+}
+
+function applyBarSelection() {
+  const wrap = $('#hab-bars'); if (!wrap) return;
+  [...wrap.querySelectorAll('.b')].forEach((el, i) => el.classList.toggle('max', i === selectedBar));
 }
 
 function paintList() {
@@ -221,11 +252,12 @@ async function toggle(id) {
   const set = doneByDay.get(key);
   const willBeDone = !set.has(id);
 
-  // optimiste
+  // optimiste — mise à jour EN PLACE (la barre anime sa largeur)
   if (willBeDone) set.add(id); else set.delete(id);
   rebuildStreaks();
   syncRow(id, willBeDone);
-  paintTop();
+  updateProgress();
+  updateBarsHeights();
 
   try {
     await writeLog(id, key, willBeDone);
@@ -234,7 +266,8 @@ async function toggle(id) {
     if (willBeDone) set.delete(id); else set.add(id);
     rebuildStreaks();
     syncRow(id, !willBeDone);
-    paintTop();
+    updateProgress();
+    updateBarsHeights();
     toast('Échec de l’enregistrement');
   }
 }
@@ -263,7 +296,7 @@ export function bind(root) {
     if (seg) { period = seg.dataset.k; selectedBar = -1; paintTop(); return; }
 
     const bar = e.target.closest('[data-bar]');
-    if (bar) { selectedBar = +bar.dataset.bar; paintTop(); return; }
+    if (bar) { selectedBar = +bar.dataset.bar; applyBarSelection(); return; }
 
     const del = e.target.closest('[data-del]');
     if (del) { e.stopPropagation(); remove(del.closest('.habit').dataset.id); return; }
