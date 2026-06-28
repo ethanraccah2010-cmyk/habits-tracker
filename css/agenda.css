@@ -1,0 +1,15 @@
+/* ============================================================
+   agenda.css — Agenda (brief §9.4). Accent bleu #1f8fe0.
+   Repris fidèlement de la maquette pages 1-4, page 4.
+   ============================================================ */
+
+.dayhead { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--dim); padding: 10px 2px 4px; }
+.event { display: flex; align-items: center; gap: 13px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 13px 15px; margin-bottom: 9px; cursor: pointer; }
+.event .tm { font-size: 13px; color: var(--dim); font-weight: 600; width: 46px; flex: none; text-align: center; }
+.event .bar { width: 3px; align-self: stretch; border-radius: 3px; background: var(--accent); box-shadow: 0 0 8px var(--accent); flex: none; }
+.event .body { min-width: 0; flex: 1; }
+.event .ti { font-size: 14px; color: var(--ink); }
+.event .d { font-size: 11px; color: var(--dim); margin-top: 2px; }
+.event .nx { margin-left: auto; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); white-space: nowrap; }
+.event.past { opacity: .55; }
+.event.past .bar { background: var(--dim); box-shadow: none; }

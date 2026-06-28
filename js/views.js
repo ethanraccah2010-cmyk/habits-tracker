@@ -7,6 +7,7 @@ import * as habitudes from './modules/habitudes.js';
 import * as nutrition from './modules/nutrition.js';
 import * as sport from './modules/sport.js';
 import * as sommeil from './modules/sommeil.js';
+import * as agenda from './modules/agenda.js';
 
 const greetHeader = () => {
   const d = new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -27,7 +28,8 @@ export const VIEWS = {
                mount: nutrition.mount, bind: nutrition.bind, onFab: nutrition.onFab },
 
   // Destinations du menu speed-dial (déclenché par ••• dans la tab bar)
-  agenda:    { accent: '#1f8fe0', tab: false, header: titleHeader('Agenda', 'Tes événements à venir'),       render: stub('Agenda') },
+  agenda:    { accent: agenda.accent, tab: false, header: agenda.header, render: agenda.render,
+               mount: agenda.mount, bind: agenda.bind, onFab: agenda.onFab },
   sport:     { accent: sport.accent, tab: false, header: sport.header, render: sport.render,
                mount: sport.mount, bind: sport.bind, onFab: sport.onFab },
   sommeil:   { accent: sommeil.accent, tab: false, header: sommeil.header, render: sommeil.render,
