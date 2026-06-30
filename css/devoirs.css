@@ -1,0 +1,57 @@
+/* ============================================================
+   devoirs.css — Devoirs & Notes (brief §9.8). Accent crème #f5ebcc.
+   Repris fidèlement de la maquette pages 5-8, page 8.
+   Réutilise .popscrim/.popcard (nutrition.css) pour la pop-up matière.
+   ============================================================ */
+
+.dn-seg { margin: 4px 0 12px; }
+.dn-tri { margin-bottom: 12px; }
+
+/* ----- Devoirs ----- */
+.hw { display: flex; gap: 13px; background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--imp, #8b909c); border-radius: 14px; padding: 13px 15px; margin-bottom: 10px; cursor: pointer; }
+.hw .main { flex: 1; min-width: 0; }
+.hw .top2 { display: flex; align-items: center; gap: 9px; }
+.hw .mat { font-family: var(--head); font-weight: 700; font-size: 15px; }
+.hw .imp { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; color: var(--imp, #8b909c); }
+.hw .chap { font-size: 12px; color: var(--ink); margin: 5px 0 8px; }
+.hw .rev { font-size: 11px; color: var(--dim); } .hw .rev b { color: var(--ink); }
+.hw.done { opacity: .5; }
+.hw.done .chap { text-decoration: line-through; }
+.hw .date { flex: none; width: 58px; border-radius: 12px; background: var(--card2); text-align: center; padding: 8px 0; align-self: flex-start; }
+.hw .date .jx { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: var(--ddc, #8b909c); }
+.hw .date .dd { font-family: var(--head); font-weight: 700; font-size: 22px; line-height: 1.1; }
+.hw .date .dm { font-size: 10px; color: var(--dim); }
+
+/* ----- Notes : par matière ----- */
+.subj { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 13px 15px; cursor: pointer; margin-bottom: 11px; }
+.subj .top2 { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 9px; }
+.subj .name { font-size: 14px; }
+.subj .avg { font-family: var(--head); font-weight: 700; font-size: 18px; }
+.subj .avg .obj { font-size: 11px; color: var(--dim); font-weight: 400; font-family: var(--ui); }
+.subj .track { height: 7px; border-radius: 99px; background: #ffffff10; overflow: visible; position: relative; }
+.subj .fill { height: 100%; border-radius: 99px; background: var(--accent); }
+.subj .objmark { position: absolute; top: -2px; width: 2px; height: 11px; background: #fff8; }
+
+.genavg { display: flex; justify-content: space-between; align-items: center; background: color-mix(in srgb, var(--accent) 14%, var(--card)); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); border-radius: 14px; padding: 14px 16px; margin-top: 3px; }
+.genavg .l { font-size: 13px; font-weight: 600; }
+.genavg .v { font-family: var(--head); font-weight: 700; font-size: 22px; }
+.genavg .v small { font-size: 12px; color: var(--dim); font-weight: 400; font-family: var(--ui); }
+
+/* ----- Notes : récentes + liste pop-up ----- */
+.grade { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 13px; padding: 12px 14px; margin-bottom: 11px; }
+.grade .g { font-family: var(--head); font-weight: 700; font-size: 20px; width: 62px; flex: none; }
+.grade .g .max { font-size: 11px; color: var(--dim); font-weight: 400; }
+.grade .gi { flex: 1; min-width: 0; }
+.grade .gt { font-size: 13px; }
+.grade .gc { font-size: 10.5px; color: var(--dim); margin-top: 2px; }
+.grade.tappable { cursor: pointer; }
+
+.mh { font-family: var(--head); font-weight: 700; font-size: 18px; padding-right: 30px; }
+.mh .ma { font-size: 12px; color: var(--dim); font-weight: 400; font-family: var(--ui); margin-top: 3px; }
+
+.subjbar { display: flex; justify-content: flex-end; margin-bottom: 11px; }
+.subjbar button { background: var(--card2); border: 1px solid var(--line); color: var(--ink); border-radius: 10px; padding: 7px 12px; font-size: 12px; cursor: pointer; font-family: var(--ui); }
+
+/* Select dans les feuilles de saisie */
+.dn-select { width: 100%; background: #0e0e12; border: 1px solid var(--line); border-radius: 10px; padding: 12px 11px; color: var(--ink); font-size: 15px; font-family: var(--ui); }
+.dn-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }

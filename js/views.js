@@ -9,6 +9,7 @@ import * as sport from './modules/sport.js';
 import * as sommeil from './modules/sommeil.js';
 import * as agenda from './modules/agenda.js';
 import * as business from './modules/business.js';
+import * as devoirs from './modules/devoirs.js';
 
 const greetHeader = () => {
   const d = new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -37,7 +38,8 @@ export const VIEWS = {
                mount: sommeil.mount, bind: sommeil.bind, onFab: sommeil.onFab },
   business:  { accent: business.accent, tab: false, header: business.header, render: business.render,
                mount: business.mount, bind: business.bind, onFab: business.onFab },
-  devoirs:   { accent: '#f5ebcc', tab: false, header: titleHeader('Devoirs & Notes', 'Échéances & moyennes'), render: stub('Devoirs & Notes') },
+  devoirs:   { accent: devoirs.accent, tab: false, header: devoirs.header, render: devoirs.render,
+               mount: devoirs.mount, bind: devoirs.bind, onFab: devoirs.onFab },
 };
 
 /* Onglets de la tab bar (5ᵉ emplacement = déclencheur ••• du speed-dial). */
