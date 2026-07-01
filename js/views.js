@@ -10,6 +10,7 @@ import * as sommeil from './modules/sommeil.js';
 import * as agenda from './modules/agenda.js';
 import * as business from './modules/business.js';
 import * as devoirs from './modules/devoirs.js';
+import * as settings from './modules/settings.js';
 
 const greetHeader = () => {
   const d = new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -40,6 +41,8 @@ export const VIEWS = {
                mount: business.mount, bind: business.bind, onFab: business.onFab },
   devoirs:   { accent: devoirs.accent, tab: false, header: devoirs.header, render: devoirs.render,
                mount: devoirs.mount, bind: devoirs.bind, onFab: devoirs.onFab },
+  parametres:{ accent: settings.accent, tab: false, header: settings.header, render: settings.render,
+               mount: settings.mount, bind: settings.bind },
 };
 
 /* Onglets de la tab bar (5ᵉ emplacement = déclencheur ••• du speed-dial). */
@@ -52,5 +55,6 @@ export const SPEED_DIAL = [
   { id: 'sommeil',  label: 'Sommeil',         ic: '🌙', accent: '#8accff' },
   { id: 'business', label: 'Business',        ic: '💼', accent: '#ff6b9d' },
   { id: 'devoirs',  label: 'Devoirs & Notes', ic: '📚', accent: '#f5ebcc' },
+  { id: 'parametres', label: 'Paramètres',    ic: '⚙️', accent: '#8b909c' },
 ];
 export const SPEED_DIAL_IDS = SPEED_DIAL.map(s => s.id);
