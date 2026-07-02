@@ -11,20 +11,11 @@ import * as agenda from './modules/agenda.js';
 import * as business from './modules/business.js';
 import * as devoirs from './modules/devoirs.js';
 import * as settings from './modules/settings.js';
-
-const greetHeader = () => {
-  const d = new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
-  return `<div class="greet"><h1>Salut Ethan</h1><span class="date">${d}</span></div>`;
-};
-const titleHeader = (title, sub) =>
-  () => `<div class="pagetitle">${title}</div><div class="pagesub">${sub}</div>`;
-
-/* Stub — sera remplacé par le vrai module à son étape. */
-const stub = (label) => () =>
-  `<div class="stub"><span class="dotty"></span>${label} · module branché aux prochaines étapes.</div>`;
+import * as accueil from './modules/accueil.js';
 
 export const VIEWS = {
-  accueil:   { accent: '#8b7bff', tab: true, header: greetHeader, render: stub('Accueil') },
+  accueil:   { accent: accueil.accent, tab: true, header: accueil.header, render: accueil.render,
+               mount: accueil.mount, bind: accueil.bind },
   habitudes: { accent: habitudes.accent, tab: true, header: habitudes.header, render: habitudes.render,
                mount: habitudes.mount, bind: habitudes.bind, onFab: habitudes.onFab },
   nutrition: { accent: nutrition.accent, tab: true, header: nutrition.header, render: nutrition.render,

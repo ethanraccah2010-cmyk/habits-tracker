@@ -1,0 +1,51 @@
+/* ============================================================
+   accueil.css — Accueil / tableau de bord (brief §9.1). Accent violet.
+   Repris de la maquette pages 1-4, page 1. Le ring et le line chart
+   s'animent vers une valeur RÉELLE (transition, pas keyframe figée).
+   ============================================================ */
+
+.coach { display: flex; align-items: flex-start; gap: 11px; margin-bottom: 11px; }
+.coach .gem { flex: none; margin-top: 2px; filter: drop-shadow(0 0 9px color-mix(in srgb, var(--accent) 45%, transparent)); animation: acFloat 3s ease-in-out infinite; }
+.bubble { background: var(--card); border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 15px 15px 15px 4px; padding: 10px 13px; min-height: 40px; display: flex; align-items: center; }
+.bubble .typing { display: flex; gap: 5px; }
+.bubble .typing span { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: acDot 1.2s ease-in-out infinite; }
+.bubble .typing span:nth-child(2) { animation-delay: .2s; }
+.bubble .typing span:nth-child(3) { animation-delay: .4s; }
+.bubble .msg { display: none; font-size: 12.5px; line-height: 1.4; }
+.bubble .msg b { color: var(--accent); }
+
+.hero { display: flex; gap: 14px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 16px; margin-bottom: 11px; }
+.ring { position: relative; width: 118px; height: 118px; flex: none; }
+.ring svg { transform: rotate(-90deg); }
+.ring .t { fill: none; stroke: #ffffff10; stroke-width: 8; }
+.ring .p { fill: none; stroke: var(--accent); stroke-width: 8; stroke-linecap: round; filter: drop-shadow(0 0 7px var(--accent)); stroke-dasharray: 326.7; stroke-dashoffset: 326.7; transition: stroke-dashoffset 1.4s cubic-bezier(.4, 0, .2, 1); }
+.ring .c { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ring .n { font-family: var(--head); font-weight: 700; font-size: 40px; line-height: 1; text-shadow: 0 0 12px var(--accent); }
+.ring .l { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--dim); margin-top: 3px; }
+.hero .side { flex: 1; display: flex; flex-direction: column; gap: 11px; }
+.streak { display: flex; align-items: center; gap: 10px; background: var(--card2); border-radius: 14px; padding: 11px 13px; }
+.streak .fl { font-size: 24px; animation: acFlame 1.6s ease-in-out infinite; }
+.streak .n { font-family: var(--head); font-weight: 700; font-size: 26px; color: var(--accent); line-height: 1; }
+.streak .sl { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); }
+.combo { font-size: 10.5px; color: var(--dim); line-height: 1.4; }
+.combo b { color: var(--ink); font-weight: 500; }
+
+.ac-graph { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 15px 16px 12px; margin-bottom: 11px; }
+.ac-graph .gh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.ac-graph .gh .tt { font-size: 13px; color: var(--ink); font-weight: 500; }
+.ac-graph .lc { width: 100%; height: 78px; display: block; }
+.ac-graph .ln { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; filter: drop-shadow(0 0 5px var(--accent)); }
+.ac-graph .gx { display: flex; justify-content: space-between; font-size: 9px; color: var(--dim); margin-top: 5px; }
+
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-bottom: 11px; }
+.tile { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 13px 14px; }
+.tile .tl { font-size: 9px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--dim); display: flex; align-items: center; gap: 5px; }
+.tile .big { font-family: var(--head); font-weight: 700; font-size: 23px; margin-top: 6px; }
+.tile .sm { font-size: 10.5px; color: var(--dim); margin-top: 2px; }
+.tile.cal .big { color: var(--accent); }
+.tile.bed { border-color: color-mix(in srgb, #8accff 22%, transparent); }
+.tile.bed .big { color: #8accff; }
+
+@keyframes acFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes acFlame { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-2px) rotate(4deg); } }
+@keyframes acDot { 0%, 100% { opacity: .3; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }

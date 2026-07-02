@@ -56,6 +56,12 @@ async function upsertSleep(row) {
     .upsert({ user_id, ...row }, { onConflict: 'user_id,log_date' });
   if (error) throw error;
 }
+async function saveTargets(rows) {
+  const user_id = await getUserId();
+  const payload = rows.map(r => ({ user_id, day_of_week: r.dow, wake_time: r.wake + ':00', target_duration_hours: r.dur }));
+  const { error } = await sb.from('sleep_targets').upsert(payload, { onConflict: 'user_id,day_of_week' });
+  if (error) throw error;
+}
 
 /* ---------- Calculs dérivés ---------- */
 /* Heure de coucher conseillée ce soir = réveil − durée visée (sleep_targets du jour). */
@@ -123,7 +129,7 @@ function paint() {
     : `<span class="moon">🌙</span><div>
          <div class="lab">Au lit ce soir</div>
          <div class="big" style="font-size:18px">—</div>
-         <div class="sub">Aucun objectif pour ce jour. Configure-le à l'onboarding.</div>
+         <div class="sub">Aucun objectif défini. Appuie sur « Modifier mes objectifs » ci-dessous.</div>
        </div>`;
 
   const debtMin = de == null ? null : Math.round(de * 60);
@@ -131,6 +137,7 @@ function paint() {
 
   root.innerHTML = `
     <div class="bedhero">${bedHtml}</div>
+    <div style="text-align:right;margin:-4px 0 11px"><span class="setlink" id="slp-edit-targets">⚙️ Modifier mes objectifs</span></div>
     <div class="sl2">
       <div class="scard"><div class="l">Moyenne 7 j</div><div class="b">${a == null ? '—' : fmtDur(a)}</div></div>
       <div class="scard debt"><div class="l">Dette de sommeil</div><div class="b ${debtMin != null && debtMin >= 0 ? 'ok' : ''}">${debtTxt}</div></div>
@@ -241,7 +248,60 @@ export function bind(root) {
     if (seg) { period = seg.dataset.k; $$('#slp-seg button', root).forEach(b => b.classList.toggle('on', b === seg)); paintLine(); return; }
     const nb = e.target.closest('[data-n]');
     if (nb) { selectedNight = +nb.dataset.n; $$('#slp-nightsel button', root).forEach(b => b.classList.toggle('on', b === nb)); paintNightDetail(); return; }
+    if (e.target.closest('#slp-edit-targets')) { openTargetsSheet(); return; }
   });
+}
+
+/* ---------- Édition des objectifs de sommeil (7 jours → sleep_targets) ---------- */
+const DAYS_FULL = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+function openTargetsSheet() {
+  // valeurs de départ : cibles existantes, sinon défauts (semaine 7h/06:00, week-end 9h/08:00)
+  const rows = DAYS_FULL.map((_, dow) => {
+    const t = targets.get(dow);
+    if (t) {
+      const w = t.wake_min;
+      return { dow, wake: `${String(Math.floor(w / 60)).padStart(2, '0')}:${String(w % 60).padStart(2, '0')}`, dur: t.dur_h };
+    }
+    return dow < 5 ? { dow, wake: '06:00', dur: 7 } : { dow, wake: '08:00', dur: 9 };
+  });
+  const bt = (wake, dur) => { const [h, m] = wake.split(':').map(Number); let x = h * 60 + m - Math.round(dur * 60); x = ((x % 1440) + 1440) % 1440; return `${String(Math.floor(x / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`; };
+  openSheet(`
+    <div class="sheet__title">Objectifs de sommeil</div>
+    <p style="font-size:12px;color:var(--dim);margin:-4px 0 12px">Réveil + durée visée par jour. L'heure de coucher est calculée.</p>
+    <div id="tg-rows">
+      ${rows.map(r => `<div class="dayrow" data-dow="${r.dow}">
+        <span class="dn">${DAYS_FULL[r.dow].slice(0, 3)}</span>
+        <div class="mini"><span>Réveil</span><input type="time" value="${r.wake}" data-wake></div>
+        <div class="mini"><span>Durée (h)</span><input type="number" step="0.25" value="${r.dur}" data-dur></div>
+        <span class="bt" data-bt>${bt(r.wake, r.dur)}</span>
+      </div>`).join('')}
+    </div>
+    <button class="btn-primary" id="tg-save" style="margin-top:12px">Enregistrer</button>`);
+  const s = $('#sheet');
+  // recalcul live du coucher
+  $$('#tg-rows .dayrow', s).forEach(row => {
+    const wk = row.querySelector('[data-wake]'), du = row.querySelector('[data-dur]'), b = row.querySelector('[data-bt]');
+    const upd = () => { b.textContent = bt(wk.value, parseFloat(du.value) || 0); };
+    wk.oninput = upd; du.oninput = upd;
+  });
+  const btn = s.querySelector('#tg-save');
+  btn.onclick = async () => {
+    const payload = $$('#tg-rows .dayrow', s).map(row => ({
+      dow: Number(row.dataset.dow),
+      wake: row.querySelector('[data-wake]').value || '06:00',
+      dur: parseFloat(row.querySelector('[data-dur]').value) || 0,
+    }));
+    btn.disabled = true; btn.textContent = 'Enregistrement…';
+    try {
+      await saveTargets(payload);
+      closeSheet();
+      toast('Objectifs de sommeil enregistrés');
+      await reload();
+    } catch (err) {
+      btn.disabled = false; btn.textContent = 'Enregistrer';
+      toast('Échec : ' + (err.message || 'écriture refusée'));
+    }
+  };
 }
 
 /* ---------- FAB : enregistrer une nuit ---------- */

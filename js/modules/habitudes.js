@@ -33,16 +33,17 @@ async function fetchHabits() {
 async function fetchLogs(sinceKey) {
   const { data, error } = await sb
     .from('habit_logs')
-    .select('habit_id,log_date,completed')
+    .select('habit_id,log_date,completed,weight')
     .gte('log_date', sinceKey);
   if (error) throw error;
   return (data || []).filter(l => l.completed);
 }
 
-async function writeLog(habitId, key, done) {
+/* Écrit/supprime le log ; `weight` = multiplicateur de CETTE occurrence (défaut 1). */
+async function writeLog(habitId, key, done, weight = 1) {
   if (done) {
     const { error } = await sb.from('habit_logs')
-      .upsert({ habit_id: habitId, log_date: key, completed: true }, { onConflict: 'habit_id,log_date' });
+      .upsert({ habit_id: habitId, log_date: key, completed: true, weight }, { onConflict: 'habit_id,log_date' });
     if (error) throw error;
   } else {
     const { error } = await sb.from('habit_logs')
@@ -76,8 +77,21 @@ function rebuildStreaks() {
 }
 
 function todayCount() {
-  const set = doneByDay.get(TODAY());
-  return set ? [...set].filter(id => habits.some(h => h.id === id)).length : 0;
+  const m = doneByDay.get(TODAY());
+  return m ? [...m.keys()].filter(id => habits.some(h => h.id === id)).length : 0;
+}
+
+/* Poids de l'occurrence du jour pour une habitude (défaut 1 ; 0 si non faite). */
+function logWeight(id, key = TODAY()) {
+  const m = doneByDay.get(key);
+  return m && m.has(id) ? (Number(m.get(id)) || 1) : 0;
+}
+/* Taux PONDÉRÉ = Σ poids des occurrences cochées / nombre d'habitudes (plafonné à 1).
+   Un ×2 peut ainsi compenser une habitude manquée. */
+function weightedRate() {
+  if (!habits.length) return 0;
+  const done = habits.reduce((s, h) => s + logWeight(h.id), 0);
+  return Math.min(1, done / habits.length);
 }
 
 /* Série globale affichée (badge flamme) = plus longue série EN COURS (brief §9.1). */
@@ -140,8 +154,8 @@ async function reload() {
     habits = hb;
     doneByDay = new Map();
     for (const l of logs) {
-      if (!doneByDay.has(l.log_date)) doneByDay.set(l.log_date, new Set());
-      doneByDay.get(l.log_date).add(l.habit_id);
+      if (!doneByDay.has(l.log_date)) doneByDay.set(l.log_date, new Map());
+      doneByDay.get(l.log_date).set(l.habit_id, Number(l.weight) || 1);
     }
     rebuildStreaks();
     paintTop();
@@ -190,10 +204,10 @@ function paintTop() {
       <div class="track"><div class="fill" id="hab-fill" style="width:0%"></div></div>
     </div>`;
 
-  // Anime la barre de 0 → cible au montage / changement de période (transition CSS).
+  // Anime la barre de 0 → cible (largeur = taux PONDÉRÉ) au montage / changement de période.
   requestAnimationFrame(() => {
     const f = $('#hab-fill');
-    if (f) f.style.width = (done / total * 100).toFixed(0) + '%';
+    if (f) f.style.width = (weightedRate() * 100).toFixed(0) + '%';
   });
 }
 
@@ -202,7 +216,7 @@ function updateProgress() {
   const total = habits.length, done = todayCount(), streak = globalStreak();
   const c = $('#hab-count'); if (c) c.textContent = done;
   const fl = $('#hab-flame'); if (fl) fl.textContent = streak;
-  const f = $('#hab-fill'); if (f) f.style.width = (total ? done / total * 100 : 0).toFixed(0) + '%';
+  const f = $('#hab-fill'); if (f) f.style.width = (weightedRate() * 100).toFixed(0) + '%';
 }
 
 function updateBarsHeights() {
@@ -230,40 +244,62 @@ function paintList() {
     </div>`;
     return;
   }
-  const todaySet = doneByDay.get(TODAY()) || new Set();
+  const todayMap = doneByDay.get(TODAY()) || new Map();
   list.innerHTML = habits.map(h => {
-    const done = todaySet.has(h.id);
+    const done = todayMap.has(h.id);
     const s = streakByHabit.get(h.id) || 0;
+    const w = logWeight(h.id);
     return `<div class="habit" data-id="${h.id}">
       <input type="checkbox" ${done ? 'checked' : ''} tabindex="-1">
       <span class="box">${CHECK_SVG}</span>
       <span class="ic">${h.icon || '✅'}</span>
       <span class="txt">${escapeHtml(h.name)}</span>
+      <button class="mult ${done ? '' : 'hidden'}" data-mult aria-label="Multiplicateur du jour">×${done ? String(w).replace('.', ',') : '1'}</button>
       <span class="mini-strk">${s > 0 ? '🔥 ' + s : ''}</span>
       <button class="del" data-del aria-label="Archiver">×</button>
     </div>`;
   }).join('');
 }
 
+/* Cycle le multiplicateur de l'occurrence du jour : 1 → 1,5 → 2 → 1. */
+const MULT_CYCLE = [1, 1.5, 2];
+async function cycleMult(id) {
+  const key = TODAY();
+  const m = doneByDay.get(key);
+  if (!m || !m.has(id)) return;                 // seulement si l'habitude est cochée
+  const cur = Number(m.get(id)) || 1;
+  const next = MULT_CYCLE[(MULT_CYCLE.indexOf(cur) + 1) % MULT_CYCLE.length];
+  m.set(id, next);
+  syncMultBadge(id, next);
+  updateProgress();
+  try { await writeLog(id, key, true, next); }
+  catch { m.set(id, cur); syncMultBadge(id, cur); updateProgress(); toast('Échec de l’enregistrement'); }
+}
+function syncMultBadge(id, w) {
+  const row = $(`.habit[data-id="${id}"]`, $('#hab-list'));
+  const b = row?.querySelector('[data-mult]');
+  if (b) b.textContent = '×' + String(w).replace('.', ',');
+}
+
 /* ---------- Interactions ---------- */
 async function toggle(id) {
   const key = TODAY();
-  if (!doneByDay.has(key)) doneByDay.set(key, new Set());
-  const set = doneByDay.get(key);
-  const willBeDone = !set.has(id);
+  if (!doneByDay.has(key)) doneByDay.set(key, new Map());
+  const m = doneByDay.get(key);
+  const willBeDone = !m.has(id);
 
-  // optimiste — mise à jour EN PLACE (la barre anime sa largeur)
-  if (willBeDone) set.add(id); else set.delete(id);
+  // optimiste — mise à jour EN PLACE (la barre anime sa largeur). Nouvelle occurrence = ×1.
+  if (willBeDone) m.set(id, 1); else m.delete(id);
   rebuildStreaks();
   syncRow(id, willBeDone);
   updateProgress();
   updateBarsHeights();
 
   try {
-    await writeLog(id, key, willBeDone);
+    await writeLog(id, key, willBeDone, 1);
   } catch (e) {
     // rollback
-    if (willBeDone) set.delete(id); else set.add(id);
+    if (willBeDone) m.delete(id); else m.set(id, 1);
     rebuildStreaks();
     syncRow(id, !willBeDone);
     updateProgress();
@@ -279,6 +315,8 @@ function syncRow(id, done) {
   row.querySelector('input').checked = done;
   const s = streakByHabit.get(id) || 0;
   row.querySelector('.mini-strk').textContent = s > 0 ? '🔥 ' + s : '';
+  const b = row.querySelector('[data-mult]');           // badge ×N : visible + réinitialisé à ×1
+  if (b) { b.classList.toggle('hidden', !done); b.textContent = '×1'; }
 }
 
 async function remove(id) {
@@ -297,6 +335,9 @@ export function bind(root) {
 
     const bar = e.target.closest('[data-bar]');
     if (bar) { selectedBar = +bar.dataset.bar; applyBarSelection(); return; }
+
+    const mb = e.target.closest('[data-mult]');
+    if (mb) { e.stopPropagation(); cycleMult(mb.closest('.habit').dataset.id); return; }
 
     const del = e.target.closest('[data-del]');
     if (del) { e.stopPropagation(); remove(del.closest('.habit').dataset.id); return; }
@@ -329,8 +370,7 @@ export function onFab() {
 
   const sheet = $('#sheet');
   sheet.querySelector('#h-emoji').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-e]');
-    if (!b) return;
+    const b = e.target.closest('[data-e]'); if (!b) return;
     pickedEmoji = b.dataset.e;
     $$('#h-emoji button', sheet).forEach(x => x.classList.toggle('on', x === b));
   });
@@ -345,9 +385,9 @@ export function onFab() {
       closeSheet();
       toast('Habitude créée');
       await reload();
-    } catch {
+    } catch (err) {
       create.disabled = false; create.textContent = 'Créer';
-      toast('Échec de la création');
+      toast('Échec : ' + (err.message || 'création refusée'));
     }
   });
 }
