@@ -1,0 +1,5 @@
+# Fichiers de travail — hors déploiement (app statique = index.html + css/ + js/)
+brief-claude-code.md
+design-reference/
+.claude/
+.DS_Store
