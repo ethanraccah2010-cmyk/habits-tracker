@@ -10,7 +10,7 @@
 import { sb } from '../supabase.js';
 import { getUserId } from '../auth.js';
 import { $, $$, toast, openSheet, closeSheet } from '../ui.js';
-import { dayKey, addDays, monthLabel } from '../dates.js';
+import { dayKey, addDays, monthLabel, fromKey } from '../dates.js';
 
 export const accent = '#3fb88a';
 export const header = () =>
@@ -24,6 +24,12 @@ let settings = null;              // profile_settings
 let meals = [];                   // repas du jour
 let weights = [];                 // weight_logs (asc)
 let presets = [];                 // meal_presets (chargés à la demande)
+let viewDate = null;              // jour affiché (date logique). Borné : aujourd'hui ⇄ hier.
+
+/* Navigation de date bornée à 1 jour en arrière (brief §"Date logique"). */
+const TODAY = () => dayKey();
+const YESTERDAY = () => dayKey(addDays(new Date(), -1));
+const onToday = () => viewDate === TODAY();
 
 const MACRO_GOAL_FALLBACK = { kcal: 2200, p: 150, g: 250, l: 70 };
 const CHIPS = ['Tout', 'Petit-déj', 'Déjeuner', 'Dîner'];
@@ -44,11 +50,11 @@ async function saveSettings(s) {
   }, { onConflict: 'user_id' });
   if (error) throw error;
 }
-async function fetchMealsToday() {
+async function fetchMealsForDate(dateKey) {
   // Filtre par DATE LOGIQUE (meal_date), pas par eaten_at (brief §"Date logique").
   const { data, error } = await sb.from('meals')
     .select('id,name,eaten_at,meal_date,kcal,protein_g,carbs_g,fat_g')
-    .eq('meal_date', dayKey())
+    .eq('meal_date', dateKey)
     .order('eaten_at', { ascending: true });   // ordre par heure DANS la journée
   if (error) throw error;
   return data || [];
@@ -56,7 +62,7 @@ async function fetchMealsToday() {
 async function insertMeal(m) {
   const user_id = await getUserId();
   const { error } = await sb.from('meals').insert({
-    user_id, name: m.name, eaten_at: m.eaten_at,
+    user_id, name: m.name, eaten_at: m.eaten_at, meal_date: m.meal_date,
     kcal: m.kcal, protein_g: m.p, carbs_g: m.g, fat_g: m.l,
   });
   if (error) throw error;
@@ -137,13 +143,31 @@ export function render() {
 }
 
 export async function mount() {
+  viewDate = TODAY();                     // à chaque montage : on repart sur aujourd'hui
   try {
-    [settings, meals, weights] = await Promise.all([fetchSettings(), fetchMealsToday(), fetchWeights()]);
+    [settings, meals, weights] = await Promise.all([fetchSettings(), fetchMealsForDate(viewDate), fetchWeights()]);
     paint();
   } catch (e) {
     const l = $('#nut-list');
     if (l) l.innerHTML = `<div class="empty"><p>Chargement impossible.<br>${esc(e.message || '')}</p></div>`;
   }
+}
+
+async function reloadMeals() {
+  meals = await fetchMealsForDate(viewDate);
+  paintRepas();
+}
+
+/* Barre de navigation de date (aujourd'hui ⇄ hier, vue Repas). */
+function dateNavHTML() {
+  const today = onToday();
+  const lab = today ? "Aujourd'hui" : 'Hier';
+  const dateStr = fromKey(viewDate).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+  return `<div class="datenav">
+    <button class="dn-arrow" data-day-prev ${today ? '' : 'disabled'} aria-label="Jour précédent">‹</button>
+    <div class="dn-lab"><b>${lab}</b><span>${dateStr}</span></div>
+    <button class="dn-arrow" data-day-next ${today ? 'disabled' : ''} aria-label="Jour suivant">›</button>
+  </div>`;
 }
 
 function paint() {
@@ -169,6 +193,7 @@ function paintRepas() {
   };
 
   top.innerHTML = `
+    ${dateNavHTML()}
     <div class="cal-hero">
       <div class="cal-ring">
         <svg width="104" height="104" viewBox="0 0 104 104">
@@ -204,7 +229,7 @@ function paintRepas() {
 
   const shown = meals.filter(m => chip === 'Tout' || mealCat(m.eaten_at) === chip);
   if (meals.length === 0) {
-    list.innerHTML = `<div class="empty"><p>Aucun repas aujourd'hui.<br>Ajoute-en un avec le bouton ＋.</p></div>`;
+    list.innerHTML = `<div class="empty"><p>${onToday() ? 'Aucun repas aujourd’hui' : 'Aucun repas ce jour-là'}.<br>Ajoute-en un avec le bouton ＋.</p></div>`;
   } else {
     list.innerHTML = shown.map(m => {
       const cat = mealCat(m.eaten_at);
@@ -294,6 +319,9 @@ export function bind(root) {
     const seg = e.target.closest('#nut-seg button');
     if (seg) { subview = seg.dataset.v; $$('#nut-seg button', root).forEach(b => b.classList.toggle('on', b === seg)); paint(); return; }
 
+    if (e.target.closest('[data-day-prev]')) { if (onToday()) { viewDate = YESTERDAY(); reloadMeals(); } return; }
+    if (e.target.closest('[data-day-next]')) { if (!onToday()) { viewDate = TODAY(); reloadMeals(); } return; }
+
     const ch = e.target.closest('[data-chip]');
     if (ch) { chip = ch.dataset.chip; paintRepas(); return; }
 
@@ -380,7 +408,7 @@ function openMealPop(id) {
   // suppression
   p.querySelector('[data-popdel]').onclick = async (ev) => {
     const did = ev.currentTarget.dataset.popdel;
-    try { await deleteMeal(did); p.classList.remove('show'); meals = await fetchMealsToday(); paintRepas(); toast('Repas supprimé'); }
+    try { await deleteMeal(did); p.classList.remove('show'); await reloadMeals(); toast('Repas supprimé'); }
     catch { toast('Échec de la suppression'); }
   };
   // enregistrer comme plat prédéfini
@@ -466,12 +494,12 @@ function openMealForm(pre) {
     const kcal = parseInt(s.querySelector('#m-kcal').value, 10);
     if (!name || !kcal) { s.querySelector('#m-name').focus(); return; }
     const [hh, mm] = s.querySelector('#m-time').value.split(':').map(Number);
-    const when = new Date(); when.setHours(hh || 0, mm || 0, 0, 0);
+    const when = fromKey(viewDate); when.setHours(hh || 0, mm || 0, 0, 0);   // heure sur le JOUR AFFICHÉ
     const num = (id) => { const val = parseFloat((s.querySelector(id).value || '').replace(',', '.')); return isNaN(val) ? null : val; };
     btn.disabled = true; btn.textContent = 'Ajout…';
     try {
-      await insertMeal({ name, kcal, eaten_at: when.toISOString(), p: num('#m-p'), g: num('#m-g'), l: num('#m-l') });
-      closeSheet(); meals = await fetchMealsToday(); subview = 'repas'; paint(); toast('Repas ajouté');
+      await insertMeal({ name, kcal, eaten_at: when.toISOString(), meal_date: viewDate, p: num('#m-p'), g: num('#m-g'), l: num('#m-l') });
+      closeSheet(); subview = 'repas'; await reloadMeals(); toast('Repas ajouté');
     } catch (err) { btn.disabled = false; btn.textContent = 'Ajouter'; toast('Échec : ' + (err.message || 'ajout refusé')); }
   };
 }
