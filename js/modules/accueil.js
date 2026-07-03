@@ -31,13 +31,12 @@ const parseTimeMin = (t) => { if (!t) return null; const [h, m] = t.split(':').m
 async function fetchAll() {
   const since = dayKey(addDays(new Date(), -97));
   const nowIso = new Date().toISOString();
-  const startToday = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.toISOString(); })();
   const [hb, logs, sl, tg, ml, ps, ev] = await Promise.all([
     sb.from('habits').select('id,name,icon').eq('archived', false),
     sb.from('habit_logs').select('habit_id,log_date,completed,weight').gte('log_date', since),
     sb.from('sleep_logs').select('log_date,bedtime,wake_time,duration_hours').gte('log_date', since),
     sb.from('sleep_targets').select('day_of_week,wake_time,target_duration_hours'),
-    sb.from('meals').select('kcal,eaten_at').gte('eaten_at', startToday),
+    sb.from('meals').select('kcal,meal_date').eq('meal_date', dayKey()),   // calories du jour = date logique
     sb.from('profile_settings').select('target_kcal,target_protein_g,target_carbs_g,target_fat_g').maybeSingle(),
     sb.from('events').select('title,starts_at,ends_at,location').gte('starts_at', nowIso).order('starts_at', { ascending: true }).limit(1),
   ]);

@@ -45,12 +45,11 @@ async function saveSettings(s) {
   if (error) throw error;
 }
 async function fetchMealsToday() {
-  const start = new Date(); start.setHours(0, 0, 0, 0);
-  const end = addDays(start, 1);
+  // Filtre par DATE LOGIQUE (meal_date), pas par eaten_at (brief §"Date logique").
   const { data, error } = await sb.from('meals')
-    .select('id,name,eaten_at,kcal,protein_g,carbs_g,fat_g')
-    .gte('eaten_at', start.toISOString()).lt('eaten_at', end.toISOString())
-    .order('eaten_at', { ascending: true });
+    .select('id,name,eaten_at,meal_date,kcal,protein_g,carbs_g,fat_g')
+    .eq('meal_date', dayKey())
+    .order('eaten_at', { ascending: true });   // ordre par heure DANS la journée
   if (error) throw error;
   return data || [];
 }

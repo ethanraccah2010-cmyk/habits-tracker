@@ -304,3 +304,49 @@ Construis et teste un module complet avant de passer au suivant.
 3. **UI de réglages** : page de réglages dédiée pour ré-éditer les objectifs (sommeil, nutrition, matières), ou édition directement dans chaque module ? À trancher.
 4. **Poids du score** : valider/ajuster les poids de `computeDailyScore` une fois des vraies données saisies.
 ```
+## Convention — Date logique des entrées manuelles
+
+### Principe
+Toute entrée manuelle datée est agrégée sur une **date logique** : une colonne
+de type **DATE** (pas timestamp) qui porte le jour auquel l'entrée compte,
+éditable par l'utilisateur, défaut `current_date`.
+
+Type DATE volontaire : en v1 l'heure n'a aucune valeur de calcul (1RM, score, agrégations hebdo raisonnent par jour). Une activité à cheval sur minuit est attribuée à UN jour, choisi par l'utilisateur. Pas de logique début/fin.
+
+TOUTES les agrégations et filtres par jour (score, volume hebdo, historique, streaks) pointent sur la date logique.
+
+> ⚠️ Réalité du schéma (vérifié le 2026-07-02 via `information_schema`).
+> Les tables concernées **n'ont pas** de colonne `created_at` d'audit. Il n'y a
+> donc **aucune** séparation « created_at vs date logique » à honorer, et on
+> n'ajoute pas de colonnes d'audit pour « coller au principe » : aucun
+> consommateur ne les lirait. La seule dualité temporelle réelle est
+> `meals.eaten_at` (horodatage, sert à catégoriser Petit-déj/Déj/Dîner) vs
+> `meals.meal_date` (jour logique).
+
+### État par table
+- `habit_logs.log_date` — DATE NOT NULL, unique `(habit_id, log_date)`. **Déjà conforme.**
+- `workout_sessions.session_date` — DATE NOT NULL. **Déjà conforme.**
+- `meals` — **ajouter `meal_date` DATE NOT NULL DEFAULT current_date** (backfill depuis `eaten_at`, converti en Europe/Paris). Seule migration nécessaire.
+
+Le front passe **toujours** la date logique explicitement à l'insert
+(`log_date`, `session_date`) ; un `DEFAULT current_date` sur ces deux colonnes
+serait cosmétique (jamais déclenché). Le travail de datation pour Sport et
+Habitudes est donc **100 % frontend**, pas SQL. Seul `meals` demande une
+migration (ajout de la colonne).
+
+### Migration `meals` (tables en prod, RLS actif)
+1. `ALTER TABLE meals ADD COLUMN meal_date DATE`
+2. Backfill : `UPDATE meals SET meal_date = (eaten_at AT TIME ZONE 'Europe/Paris')::date`
+3. `ALTER COLUMN meal_date SET NOT NULL`, `SET DEFAULT current_date`
+
+### UX — DEUX patterns distincts (ne pas uniformiser)
+- **Entrée discrète (Sport, Nutrition)** : chip date en tête du sheet de création. Défaut « Aujourd'hui ». Tap → date picker à l'accent du module (Sport `#ff4d4d`, Nutrition `#3fb88a`). Le cas 99 % ne touche pas le chip.
+- **Checklist journalière (Habitudes)** : PAS de chip par entrée. En-tête de date sur la vue Habitudes, navigable d'un jour en arrière. Cocher/décocher écrit/supprime un `habit_log` avec `log_date` = jour affiché.
+
+Interdits : date picker obligatoire ou proéminent à chaque saisie ; pré-remplissage « intelligent » basé sur l'heure courante. Défaut = toujours aujourd'hui, prévisible.
+
+### Score
+Le score d'un jour est déjà une lecture calculée. Backdater un `habit_log` recalcule le score du jour concerné — comportement voulu, pas un bug.
+
+### Note
+`weight_logs` relève de la même classe (entrée datée). Hors scope immédiat, mais applique la même convention le jour où tu y touches.
