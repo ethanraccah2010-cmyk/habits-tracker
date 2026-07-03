@@ -15,7 +15,7 @@
 import { sb } from '../supabase.js';
 import { getUserId } from '../auth.js';
 import { $, $$, toast, openSheet, closeSheet } from '../ui.js';
-import { dayKey, addDays, monthLabel } from '../dates.js';
+import { dayKey, addDays, monthLabel, fromKey } from '../dates.js';
 
 export const accent = '#ff4d4d';
 export const header = () =>
@@ -25,19 +25,25 @@ export const header = () =>
 let mode = 'empty';     // 'real' | 'proposed' | 'empty'
 let session = null;     // { id, title, template_id }
 let exos = [];          // [{ id|null, name, order_index, target, sets:[{reps,kg}] }]
+let viewDate = null;    // jour affiché (date logique). Borné : aujourd'hui ⇄ hier.
 const ANIMS = ['🏋️', '💪', '🤸', '🦵', '🔥'];
+
+/* Navigation de date bornée à 1 jour en arrière (brief §"Date logique"). */
+const TODAY = () => dayKey();
+const YESTERDAY = () => dayKey(addDays(new Date(), -1));
+const onToday = () => viewDate === TODAY();
 
 /* ---------- Epley ---------- */
 export const e1rm = (reps, kg) => (kg > 0 && reps > 0 ? kg * (1 + reps / 30) : 0);
 const bestOf = (sets) => sets.reduce((m, s) => Math.max(m, e1rm(s.reps, s.kg)), 0);
 
 /* ---------- Dates ---------- */
-const todayDow = () => (new Date().getDay() + 6) % 7; // 0=lundi … 6=dimanche
+const dowOf = (dateKey) => (fromKey(dateKey).getDay() + 6) % 7; // 0=lundi … 6=dimanche
 
 /* ---------- Accès données ---------- */
-async function fetchTodaySession() {
+async function fetchSessionForDate(dateKey) {
   const { data, error } = await sb.from('workout_sessions')
-    .select('id,title,template_id').eq('session_date', dayKey()).limit(1);
+    .select('id,title,template_id').eq('session_date', dateKey).limit(1);
   if (error) throw error;
   return data?.[0] || null;
 }
@@ -51,10 +57,10 @@ async function fetchSessionExercises(sessionId) {
     sets: (se.exercise_sets || []).sort((a, b) => a.set_number - b.set_number).map(s => ({ reps: s.reps, kg: +s.kg })),
   }));
 }
-async function fetchTemplateForToday() {
+async function fetchTemplateForDate(dateKey) {
   const { data, error } = await sb.from('workout_templates')
     .select('id,title,day_of_week,template_exercises(name,target_sets,target_reps,order_index)')
-    .eq('day_of_week', todayDow()).limit(1);
+    .eq('day_of_week', dowOf(dateKey)).limit(1);
   if (error) throw error;
   return data?.[0] || null;
 }
@@ -77,7 +83,7 @@ async function fetchExoHistory(name) {
 async function createSession(title, template_id) {
   const user_id = await getUserId();
   const { data, error } = await sb.from('workout_sessions')
-    .insert({ user_id, title, template_id: template_id || null, session_date: dayKey() })
+    .insert({ user_id, title, template_id: template_id || null, session_date: viewDate })   // date logique = jour affiché
     .select('id,title,template_id').single();
   if (error) throw error;
   return data;
@@ -101,13 +107,13 @@ async function replaceSets(sessionExerciseId, sets) {
 
 /* ---------- Chargement ---------- */
 async function load() {
-  session = await fetchTodaySession();
+  session = await fetchSessionForDate(viewDate);
   if (session) {
     mode = 'real';
     exos = await fetchSessionExercises(session.id);
     // garde le repère "target" depuis le gabarit si on le retrouve (purement informatif)
   } else {
-    const tmpl = await fetchTemplateForToday();
+    const tmpl = await fetchTemplateForDate(viewDate);
     if (tmpl && (tmpl.template_exercises || []).length) {
       mode = 'proposed';
       session = { id: null, title: tmpl.title, template_id: tmpl.id };
@@ -142,23 +148,41 @@ export function render() {
   return `<div id="sport-root"></div>`;
 }
 export async function mount() {
+  viewDate = TODAY();                    // à chaque montage : on repart sur aujourd'hui
   const root = $('#sport-root');
   try { await load(); paint(); }
   catch (e) { if (root) root.innerHTML = `<div class="empty"><p>Chargement impossible.<br>${esc(e.message || '')}</p></div>`; }
+}
+
+async function reloadView() {
+  try { await load(); paint(); }
+  catch (e) { const root = $('#sport-root'); if (root) root.innerHTML = `<div class="empty"><p>Chargement impossible.<br>${esc(e.message || '')}</p></div>`; }
+}
+
+/* Barre de navigation de date (aujourd'hui ⇄ hier, bornée). */
+function dateNavHTML() {
+  const today = onToday();
+  const lab = today ? "Aujourd'hui" : 'Hier';
+  const dateStr = fromKey(viewDate).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+  return `<div class="datenav">
+    <button class="dn-arrow" data-day-prev ${today ? '' : 'disabled'} aria-label="Jour précédent">‹</button>
+    <div class="dn-lab"><b>${lab}</b><span>${dateStr}</span></div>
+    <button class="dn-arrow" data-day-next ${today ? 'disabled' : ''} aria-label="Jour suivant">›</button>
+  </div>`;
 }
 
 function paint() {
   const root = $('#sport-root');
   if (!root) return;
   if (mode === 'empty') {
-    root.innerHTML = `<div class="empty">
-      <p>Aucune séance aujourd'hui, et pas de gabarit pour ce jour.<br>Ajoute un exercice avec le bouton ＋ pour démarrer.</p>
+    root.innerHTML = dateNavHTML() + `<div class="empty">
+      <p>${onToday() ? "Aucune séance aujourd'hui" : 'Aucune séance ce jour-là'}, et pas de gabarit pour ce jour.<br>Ajoute un exercice avec le bouton ＋ pour démarrer.</p>
     </div>`;
     return;
   }
   const doneCount = exos.filter(x => x.sets.length).length;
   const mins = exos.length * 10;
-  root.innerHTML = `
+  root.innerHTML = dateNavHTML() + `
     <div class="sess">
       <div class="t">Séance du jour — ${esc(session.title)}</div>
       <div class="s">${exos.length} exercice${exos.length > 1 ? 's' : ''}</div>
@@ -188,6 +212,8 @@ function exoCard(x, i) {
 /* ---------- Interactions ---------- */
 export function bind(root) {
   root.addEventListener('click', (e) => {
+    if (e.target.closest('[data-day-prev]')) { if (onToday()) { viewDate = YESTERDAY(); reloadView(); } return; }
+    if (e.target.closest('[data-day-next]')) { if (!onToday()) { viewDate = TODAY(); reloadView(); } return; }
     const chart = e.target.closest('[data-exo-chart]');
     if (chart) { e.stopPropagation(); openChart(exos[+chart.dataset.exoChart]); return; }
     const card = e.target.closest('[data-exo]');
@@ -213,7 +239,7 @@ async function openEntry(idx) {
   if (initial.length === 0) {
     try {
       const hist = await fetchExoHistory(exo.name);
-      const prior = hist.filter(h => h.date < dayKey() && h.sets.length).pop();
+      const prior = hist.filter(h => h.date < viewDate && h.sets.length).pop();
       if (prior) initial = prior.sets.map(s => ({ ...s }));
     } catch { /* ignore, on retombe sur l'objectif */ }
   }

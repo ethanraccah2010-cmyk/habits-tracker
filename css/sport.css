@@ -3,6 +3,14 @@
    Réutilise .popscrim/.popcard (nutrition.css) pour les modals centrés.
    ============================================================ */
 
+/* Barre de navigation de date (aujourd'hui ⇄ hier) */
+.datenav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.datenav .dn-lab { text-align: center; line-height: 1.2; }
+.datenav .dn-lab b { font-family: var(--head); font-weight: 700; font-size: 15px; display: block; }
+.datenav .dn-lab span { font-size: 11px; color: var(--dim); text-transform: capitalize; }
+.datenav .dn-arrow { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--accent); font-size: 22px; line-height: 1; cursor: pointer; flex: none; }
+.datenav .dn-arrow[disabled] { color: var(--dim); opacity: .4; cursor: default; }
+
 /* Carte séance du jour */
 .sess { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 15px 16px; margin-bottom: 11px; }
 .sess .t { font-family: var(--head); font-weight: 700; font-size: 17px; }
