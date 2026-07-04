@@ -92,6 +92,16 @@
 .wvel.down .v { color: #5AA9E6; }
 .wvel.flat .v { color: var(--ink); }
 
+/* Reco calorique (P0b, §16.1b) */
+.p0b { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--dim); border-radius: 16px; padding: 13px 15px; margin-bottom: 11px; }
+.p0b .l { font-size: 9px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--dim); }
+.p0b .msg { font-size: 13.5px; line-height: 1.45; margin-top: 6px; }
+.p0b .saisie { font-size: 10px; color: var(--dim); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.p0b.up { border-left-color: var(--accent); }
+.p0b.down { border-left-color: #5AA9E6; }
+.p0b.hold { border-left-color: #3fd18a; }
+.p0b.muted { border-left-color: #EBB54D; }
+
 /* Plats prédéfinis (picker + gestion) */
 .preset-row { width: 100%; display: flex; align-items: center; gap: 10px; background: var(--card2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 13px; margin-bottom: 8px; cursor: pointer; text-align: left; font-family: var(--ui); }
 .preset-row.static { cursor: default; }

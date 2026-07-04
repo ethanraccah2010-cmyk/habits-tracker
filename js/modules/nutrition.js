@@ -12,6 +12,8 @@ import { getUserId } from '../auth.js';
 import { $, $$, toast, openSheet, closeSheet } from '../ui.js';
 import { dayKey, addDays, monthLabel, fromKey } from '../dates.js';
 import { computeWeightVelocity } from '../weight-velocity.js';
+import { computeCalorieReco } from '../calorie-reco.js';
+import { fetchCurrentPhase, fetchLastAdjustment, insertAdjustment } from '../nutrition-phase.js';
 
 export const accent = '#3fb88a';
 export const header = () =>
@@ -25,6 +27,8 @@ let settings = null;              // profile_settings
 let meals = [];                   // repas du jour
 let weights = [];                 // weight_logs (asc)
 let presets = [];                 // meal_presets (chargés à la demande)
+let currentPhase = null;          // nutrition_phases (ligne ended_on NULL) — P0b
+let lastAdjustment = null;        // nutrition_adjustments le plus récent — garde-fou #3
 let viewDate = null;              // jour affiché (date logique). Borné : aujourd'hui ⇄ hier.
 
 /* Navigation de date bornée à 1 jour en arrière (brief §"Date logique"). */
@@ -146,7 +150,10 @@ export function render() {
 export async function mount() {
   viewDate = TODAY();                     // à chaque montage : on repart sur aujourd'hui
   try {
-    [settings, meals, weights] = await Promise.all([fetchSettings(), fetchMealsForDate(viewDate), fetchWeights()]);
+    [settings, meals, weights, currentPhase, lastAdjustment] = await Promise.all([
+      fetchSettings(), fetchMealsForDate(viewDate), fetchWeights(),
+      fetchCurrentPhase(), fetchLastAdjustment(),
+    ]);
     paint();
   } catch (e) {
     const l = $('#nut-list');
@@ -264,6 +271,27 @@ function velocityHTML() {
   </div>`;
 }
 
+/* Carte reco calorique (P0b, §16.1b) — calculée à la lecture. Muet si pas de phase. */
+function p0bHTML() {
+  const asof = dayKey();
+  const velNow = computeWeightVelocity(weights, { asof });
+  const velPrev = computeWeightVelocity(weights, { asof: dayKey(addDays(new Date(), -7)) });
+  const reco = computeCalorieReco({
+    phase: currentPhase, velNow, velPrev,
+    lastAdjustmentOn: lastAdjustment?.changed_on || null, asof,
+  });
+  if (!reco.active) return '';                      // pas de phase → muet total (§16.1b)
+  const cls = reco.kind === 'suggest' ? (reco.direction === 'up' ? 'up' : 'down')
+    : reco.kind === 'hold' ? 'hold' : 'muted';
+  const icon = reco.kind === 'suggest' ? (reco.direction === 'up' ? '⬆️' : '⬇️')
+    : reco.kind === 'hold' ? '✅' : '⏳';
+  return `<div class="p0b ${cls}">
+    <div class="l">Reco calorique</div>
+    <div class="msg">${icon} ${esc(reco.message)}</div>
+    ${reco.saisie ? `<div class="saisie">${esc(reco.saisie)}</div>` : ''}
+  </div>`;
+}
+
 /* ----- POIDS ----- */
 function paintPoids() {
   const top = $('#nut-top'), list = $('#nut-list');
@@ -291,6 +319,7 @@ function paintPoids() {
         <div class="b ${gain != null && gain >= 0 ? 'up' : ''}">${gain != null ? (gain >= 0 ? '+' : '') + frKg(gain) + ' kg' : '—'}</div></div>
     </div>
     ${velocityHTML()}
+    ${p0bHTML()}
     <div class="graph">
       <div class="gh"><span class="tt">Évolution du poids</span>
         <div class="seg" id="w-seg">
@@ -566,9 +595,15 @@ function openGoalSheet() {
     const kcal = parseInt(s.querySelector('#g-kcal').value, 10);
     if (!kcal) { s.querySelector('#g-kcal').focus(); return; }
     const intv = (id, d) => { const v = parseInt(s.querySelector(id).value, 10); return isNaN(v) ? d : v; };
+    const oldKcal = settings?.target_kcal ?? null;   // valeur persistée AVANT (garde-fou #3)
     btn.disabled = true;
     try {
       await saveSettings({ kcal, p: intv('#g-p', 0), g: intv('#g-g', 0), l: intv('#g-l', 0) });
+      // Journalise un ajustement SEULEMENT si target_kcal a réellement changé (§16.1b)
+      if (kcal !== oldKcal) {
+        try { await insertAdjustment(kcal); lastAdjustment = await fetchLastAdjustment(); }
+        catch (e) { /* non bloquant : l'objectif est enregistré ; le journal réessaiera au prochain changement */ }
+      }
       settings = await fetchSettings(); closeSheet(); paintRepas(); toast('Objectifs enregistrés');
     } catch (err) { btn.disabled = false; toast('Échec : ' + (err.message || 'enregistrement refusé')); }
   };
