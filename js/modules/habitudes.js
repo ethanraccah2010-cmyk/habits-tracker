@@ -15,9 +15,12 @@ let doneByDay = new Map();       // "YYYY-MM-DD" -> Set(habit_id) complétés
 let streakByHabit = new Map();   // habit_id -> série courante
 let period = '1S';
 let selectedBar = -1;            // index de barre sélectionnée (clic)
+let viewDate = null;            // jour affiché (date logique). Borné : aujourd'hui ⇄ hier.
 
 const PERIODS = { '1S': 7, '2S': 14, '1M': 30, '3M': 90 };
 const TODAY = () => dayKey();
+const YESTERDAY = () => dayKey(addDays(new Date(), -1));
+const onToday = () => viewDate === TODAY();
 
 /* ---------- Accès données ---------- */
 async function fetchHabits() {
@@ -77,12 +80,12 @@ function rebuildStreaks() {
 }
 
 function todayCount() {
-  const m = doneByDay.get(TODAY());
+  const m = doneByDay.get(viewDate);
   return m ? [...m.keys()].filter(id => habits.some(h => h.id === id)).length : 0;
 }
 
-/* Poids de l'occurrence du jour pour une habitude (défaut 1 ; 0 si non faite). */
-function logWeight(id, key = TODAY()) {
+/* Poids de l'occurrence du jour affiché pour une habitude (défaut 1 ; 0 si non faite). */
+function logWeight(id, key = viewDate) {
   const m = doneByDay.get(key);
   return m && m.has(id) ? (Number(m.get(id)) || 1) : 0;
 }
@@ -142,7 +145,20 @@ export function render() {
 }
 
 export async function mount() {
+  viewDate = TODAY();                     // à chaque montage : on repart sur aujourd'hui
   await reload();
+}
+
+/* Barre de navigation de date (aujourd'hui ⇄ hier, bornée). */
+function dateNavHTML() {
+  const today = onToday();
+  const lab = today ? "Aujourd'hui" : 'Hier';
+  const dateStr = fromKey(viewDate).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+  return `<div class="datenav">
+    <button class="dn-arrow" data-day-prev ${today ? '' : 'disabled'} aria-label="Jour précédent">‹</button>
+    <div class="dn-lab"><b>${lab}</b><span>${dateStr}</span></div>
+    <button class="dn-arrow" data-day-next ${today ? 'disabled' : ''} aria-label="Jour suivant">›</button>
+  </div>`;
 }
 
 async function reload() {
@@ -186,6 +202,7 @@ function paintTop() {
   }).join('');
 
   top.innerHTML = `
+    ${dateNavHTML()}
     <div class="graph">
       <div class="gh">
         <span class="tt">Habitudes complétées</span>
@@ -244,7 +261,7 @@ function paintList() {
     </div>`;
     return;
   }
-  const todayMap = doneByDay.get(TODAY()) || new Map();
+  const todayMap = doneByDay.get(viewDate) || new Map();
   list.innerHTML = habits.map(h => {
     const done = todayMap.has(h.id);
     const s = streakByHabit.get(h.id) || 0;
@@ -264,7 +281,7 @@ function paintList() {
 /* Cycle le multiplicateur de l'occurrence du jour : 1 → 1,5 → 2 → 1. */
 const MULT_CYCLE = [1, 1.5, 2];
 async function cycleMult(id) {
-  const key = TODAY();
+  const key = viewDate;
   const m = doneByDay.get(key);
   if (!m || !m.has(id)) return;                 // seulement si l'habitude est cochée
   const cur = Number(m.get(id)) || 1;
@@ -283,7 +300,7 @@ function syncMultBadge(id, w) {
 
 /* ---------- Interactions ---------- */
 async function toggle(id) {
-  const key = TODAY();
+  const key = viewDate;
   if (!doneByDay.has(key)) doneByDay.set(key, new Map());
   const m = doneByDay.get(key);
   const willBeDone = !m.has(id);
@@ -330,6 +347,9 @@ async function remove(id) {
 /* Délégation des clics dans la vue (liste + sélecteur période + barres). */
 export function bind(root) {
   root.addEventListener('click', (e) => {
+    if (e.target.closest('[data-day-prev]')) { if (onToday()) { viewDate = YESTERDAY(); paintTop(); paintList(); } return; }
+    if (e.target.closest('[data-day-next]')) { if (!onToday()) { viewDate = TODAY(); paintTop(); paintList(); } return; }
+
     const seg = e.target.closest('#hab-seg button');
     if (seg) { period = seg.dataset.k; selectedBar = -1; paintTop(); return; }
 
