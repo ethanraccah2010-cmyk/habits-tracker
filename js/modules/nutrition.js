@@ -11,6 +11,7 @@ import { sb } from '../supabase.js';
 import { getUserId } from '../auth.js';
 import { $, $$, toast, openSheet, closeSheet } from '../ui.js';
 import { dayKey, addDays, monthLabel, fromKey } from '../dates.js';
+import { computeWeightVelocity } from '../weight-velocity.js';
 
 export const accent = '#3fb88a';
 export const header = () =>
@@ -242,6 +243,27 @@ function paintRepas() {
   }
 }
 
+/* Carte vitesse de poids (P0, §16.1) — calculée à la lecture. */
+function velocityHTML() {
+  const v = computeWeightVelocity(weights, { asof: dayKey() });
+  if (v.state === 'calibration') {
+    return `<div class="wvel calib">
+      <div class="l">Vitesse de poids</div>
+      <div class="v">Calibration en cours</div>
+      <div class="hint">${v.n}/${v.minPoints} pesées sur ${v.windowDays} j — pèse-toi le matin à jeun pour lancer le calcul</div>
+    </div>`;
+  }
+  const kgw = v.velocity;
+  const val = `${kgw >= 0 ? '+' : '−'}${Math.abs(kgw).toFixed(2).replace('.', ',')} kg/sem`;
+  const cls = kgw >= 0.05 ? 'up' : kgw <= -0.05 ? 'down' : 'flat';
+  return `<div class="wvel ${cls}">
+    <div class="l">Vitesse de poids · régression ${v.windowDays} j</div>
+    <div class="v">${val}</div>
+    <div class="hint">${v.n} pesées · pente lissée (indépendante de l'escalier)</div>
+    <div class="note">Les 2 premières semaines d'un changement alimentaire reflètent surtout l'eau — lis la tendance, pas le niveau.</div>
+  </div>`;
+}
+
 /* ----- POIDS ----- */
 function paintPoids() {
   const top = $('#nut-top'), list = $('#nut-list');
@@ -268,6 +290,7 @@ function paintPoids() {
       <div class="wstat"><div class="l">Depuis le début</div>
         <div class="b ${gain != null && gain >= 0 ? 'up' : ''}">${gain != null ? (gain >= 0 ? '+' : '') + frKg(gain) + ' kg' : '—'}</div></div>
     </div>
+    ${velocityHTML()}
     <div class="graph">
       <div class="gh"><span class="tt">Évolution du poids</span>
         <div class="seg" id="w-seg">

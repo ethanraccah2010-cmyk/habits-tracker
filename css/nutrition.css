@@ -80,6 +80,18 @@
 .smalls { display: flex; gap: 12px; }
 .pop-ring-p { stroke-dashoffset: 132; transition: stroke-dashoffset .6s ease; }
 
+/* Vitesse de poids (P0, §16.1) */
+.wvel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 13px 15px; margin-bottom: 11px; }
+.wvel .l { font-size: 9px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--dim); }
+.wvel .v { font-family: var(--head); font-weight: 700; font-size: 24px; margin-top: 5px; }
+.wvel .hint { font-size: 10.5px; color: var(--dim); margin-top: 4px; }
+.wvel .note { font-size: 10px; color: var(--dim); line-height: 1.4; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.wvel.calib { border-color: color-mix(in srgb, #EBB54D 30%, transparent); }
+.wvel.calib .v { color: #EBB54D; font-size: 18px; }
+.wvel.up .v { color: var(--accent); }
+.wvel.down .v { color: #5AA9E6; }
+.wvel.flat .v { color: var(--ink); }
+
 /* Plats prédéfinis (picker + gestion) */
 .preset-row { width: 100%; display: flex; align-items: center; gap: 10px; background: var(--card2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 13px; margin-bottom: 8px; cursor: pointer; text-align: left; font-family: var(--ui); }
 .preset-row.static { cursor: default; }
