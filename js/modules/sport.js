@@ -47,28 +47,31 @@ async function fetchSessionForDate(dateKey) {
   if (error) throw error;
   return data?.[0] || null;
 }
+/* Nom d'un exo lu via la banque (exercise_id → exercises.name), plus le name texte. */
 async function fetchSessionExercises(sessionId) {
   const { data, error } = await sb.from('session_exercises')
-    .select('id,name,order_index,exercise_sets(reps,kg,set_number)')
+    .select('id,exercise_id,order_index,target_reps,exercises(name),exercise_sets(reps,kg,set_number)')
     .eq('session_id', sessionId).order('order_index', { ascending: true });
   if (error) throw error;
   return (data || []).map(se => ({
-    id: se.id, name: se.name, order_index: se.order_index,
+    id: se.id, exercise_id: se.exercise_id, name: se.exercises?.name || '(exercice supprimé)',
+    order_index: se.order_index, target_reps: se.target_reps ?? null,
+    target: se.target_reps ? `cible ${se.target_reps} reps` : '',
     sets: (se.exercise_sets || []).sort((a, b) => a.set_number - b.set_number).map(s => ({ reps: s.reps, kg: +s.kg })),
   }));
 }
 async function fetchTemplateForDate(dateKey) {
   const { data, error } = await sb.from('workout_templates')
-    .select('id,title,day_of_week,template_exercises(name,target_sets,target_reps,order_index)')
+    .select('id,title,day_of_week,template_exercises(exercise_id,target_sets,target_reps,order_index,exercises(name))')
     .eq('day_of_week', dowOf(dateKey)).limit(1);
   if (error) throw error;
   return data?.[0] || null;
 }
-/* Historique d'un exo (par nom) : sessions + séries, pour 1RM & dernière séance. */
-async function fetchExoHistory(name) {
+/* Historique d'un exo (par exercise_id, banque) : sessions + séries, pour 1RM. */
+async function fetchExoHistory(exerciseId) {
   const { data, error } = await sb.from('session_exercises')
-    .select('name,exercise_sets(reps,kg),workout_sessions(session_date)')
-    .eq('name', name);
+    .select('exercise_id,exercise_sets(reps,kg),workout_sessions(session_date)')
+    .eq('exercise_id', exerciseId);
   if (error) throw error;
   return (data || [])
     .filter(r => r.workout_sessions)
@@ -88,11 +91,24 @@ async function createSession(title, template_id) {
   if (error) throw error;
   return data;
 }
-async function addSessionExercise(sessionId, name, order_index) {
+async function addSessionExercise(sessionId, exercise_id, order_index, target_reps = null) {
   const { data, error } = await sb.from('session_exercises')
-    .insert({ session_id: sessionId, name, order_index }).select('id').single();
+    .insert({ session_id: sessionId, exercise_id, order_index, target_reps }).select('id').single();
   if (error) throw error;
   return data.id;
+}
+
+/* ---------- Banque d'exercices (S1a) ---------- */
+async function fetchExercises() {
+  const { data, error } = await sb.from('exercises').select('id,name').order('name', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+async function createExercise(name) {
+  const user_id = await getUserId();
+  const { data, error } = await sb.from('exercises').insert({ user_id, name }).select('id,name').single();
+  if (error) throw error;
+  return data;
 }
 async function replaceSets(sessionExerciseId, sets) {
   const del = await sb.from('exercise_sets').delete().eq('session_exercise_id', sessionExerciseId);
@@ -120,8 +136,9 @@ async function load() {
       exos = tmpl.template_exercises
         .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
         .map((te, i) => ({
-          id: null, name: te.name, order_index: te.order_index ?? i,
-          target: targetLabel(te.target_sets, te.target_reps), sets: [],
+          id: null, exercise_id: te.exercise_id, name: te.exercises?.name || '?',
+          order_index: te.order_index ?? i,
+          target: targetLabel(te.target_sets, te.target_reps), target_reps: te.target_reps ?? null, sets: [],
         }));
     } else {
       mode = 'empty'; session = null; exos = [];
@@ -139,7 +156,8 @@ async function materialize() {
   const created = await createSession(session.title, session.template_id);
   session = created; mode = 'real';
   for (let i = 0; i < exos.length; i++) {
-    exos[i].id = await addSessionExercise(created.id, exos[i].name, exos[i].order_index ?? i);
+    // copie la cible du gabarit dans la séance (snapshot, §16.2)
+    exos[i].id = await addSessionExercise(created.id, exos[i].exercise_id, exos[i].order_index ?? i, exos[i].target_reps ?? null);
   }
 }
 
@@ -238,7 +256,7 @@ async function openEntry(idx) {
   let initial = exo.sets.slice();
   if (initial.length === 0) {
     try {
-      const hist = await fetchExoHistory(exo.name);
+      const hist = await fetchExoHistory(exo.exercise_id);
       const prior = hist.filter(h => h.date < viewDate && h.sets.length).pop();
       if (prior) initial = prior.sets.map(s => ({ ...s }));
     } catch { /* ignore, on retombe sur l'objectif */ }
@@ -347,7 +365,7 @@ async function openChart(exo) {
     $$('#exo-seg button', m).forEach(x => x.classList.toggle('on', x === b));
     drawChart();
   });
-  try { chartHist = await fetchExoHistory(exo.name); } catch { chartHist = []; }
+  try { chartHist = await fetchExoHistory(exo.exercise_id); } catch { chartHist = []; }
   drawChart();
 }
 
@@ -382,33 +400,107 @@ function drawChart() {
   trend.style.color = diff > 1 ? '#3fd18a' : diff < -1 ? '#ff6b6b' : '#8b909c';
 }
 
-/* ---------- FAB : ajouter un exercice ---------- */
-export function onFab() {
-  openSheet(`
-    <div class="sheet__title">Ajouter un exercice</div>
-    <div class="field"><label for="ex-name">Nom de l'exercice</label>
-      <input id="ex-name" type="text" placeholder="Ex. Développé couché" autocomplete="off"></div>
-    <button class="btn-primary" id="ex-add">Ajouter</button>`);
-  const s = $('#sheet');
-  const btn = s.querySelector('#ex-add');
-  setTimeout(() => s.querySelector('#ex-name').focus(), 250);
-  btn.onclick = async () => {
-    const name = s.querySelector('#ex-name').value.trim();
-    if (!name) { s.querySelector('#ex-name').focus(); return; }
-    btn.disabled = true; btn.textContent = 'Ajout…';
-    try {
-      // garantit une séance réelle : matérialise le gabarit, ou crée une séance libre
-      if (mode === 'proposed') await materialize();
-      else if (mode === 'empty' || !session) { session = await createSession('Séance du jour', null); mode = 'real'; exos = []; }
-      const order = exos.length;
-      const id = await addSessionExercise(session.id, name, order);
-      exos.push({ id, name, order_index: order, target: '', sets: [] });
-      closeSheet(); paint(); toast('Exercice ajouté');
-    } catch (err) {
-      btn.disabled = false; btn.textContent = 'Ajouter';
-      toast('Échec : ' + (err.message || 'écriture refusée'));
-    }
-  };
+/* ---------- FAB : banque d'exercices plein écran (S1a) ---------- */
+let bank = [];   // exercises chargés à l'ouverture
+
+const norm = (s) => s.trim().toLowerCase();
+const findExact = (name) => bank.find(e => norm(e.name) === norm(name));
+/* Ressemblance v1 = « règle bête » : partage d'un mot entier, ou inclusion. */
+function findSimilar(name) {
+  const n = norm(name); const toks = new Set(n.split(/\s+/).filter(Boolean));
+  return bank.find(e => {
+    const en = norm(e.name);
+    if (en === n) return false;
+    if (en.includes(n) || n.includes(en)) return true;
+    return en.split(/\s+/).filter(Boolean).some(t => toks.has(t));
+  });
+}
+
+function bankEl() {
+  let b = document.getElementById('exo-bank');
+  if (!b) {
+    b = document.createElement('div'); b.id = 'exo-bank'; b.className = 'exo-bank';
+    document.body.appendChild(b);
+    b.addEventListener('click', (e) => { if (e.target.hasAttribute('data-bank-close')) b.classList.remove('show'); });
+  }
+  return b;
+}
+
+export async function onFab() {
+  const b = bankEl();
+  b.innerHTML = `<div class="exo-bank__head">
+      <button class="exo-bank__x" data-bank-close aria-label="Fermer">✕</button>
+      <div class="exo-bank__t">Ajouter un exercice</div>
+    </div>
+    <div class="exo-bank__create">
+      <input id="exo-new" type="text" placeholder="Nouvel exercice…" autocomplete="off">
+      <button id="exo-create" class="btn-primary">Créer</button>
+    </div>
+    <div class="exo-bank__list" id="exo-list"><div class="exo-bank__load">Chargement de la banque…</div></div>`;
+  b.classList.add('show');
+
+  try { bank = await fetchExercises(); } catch (e) { $('#exo-list', b).innerHTML = `<div class="empty"><p>Banque indisponible.<br>${esc(e.message || '')}</p></div>`; return; }
+  renderBankList();
+
+  $('#exo-create', b).onclick = () => attemptCreate($('#exo-new', b).value);
+  $('#exo-new', b).addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptCreate(e.target.value); });
+}
+
+function renderBankList() {
+  const list = $('#exo-list');
+  if (!list) return;
+  if (!bank.length) { list.innerHTML = `<div class="empty"><p>Banque vide.<br>Crée ton premier exercice ci-dessus.</p></div>`; return; }
+  list.innerHTML = bank.map(e => `<button class="exo-bank__item" data-pick="${e.id}">${esc(e.name)}</button>`).join('');
+  $$('[data-pick]', list).forEach(btn => btn.onclick = () => pickExercise(btn.dataset.pick));
+}
+
+/* Anti-doublon 2 étages (trim + minuscules). */
+function attemptCreate(raw) {
+  const name = (raw || '').trim();
+  if (!name) return;
+  const exact = findExact(name);
+  if (exact) { pickExercise(exact.id); return; }      // étage 1 : égalité → réutiliser, muet
+  const similar = findSimilar(name);
+  if (similar) {                                        // étage 2 : ressemblance → avertir, pas bloquer
+    const box = bankEl();
+    const warn = document.createElement('div');
+    warn.className = 'exo-bank__warn';
+    warn.innerHTML = `<div class="w-card">
+      <div class="w-t">Ça ressemble à « ${esc(similar.name)} »</div>
+      <div class="w-s">Tu veux vraiment créer un autre exercice « ${esc(name)} » ?</div>
+      <button class="btn-secondary" id="w-reuse">Réutiliser « ${esc(similar.name)} »</button>
+      <button class="btn-primary" id="w-create">Créer « ${esc(name)} »</button>
+      <button class="btn-ghost-danger" id="w-cancel">Annuler</button>
+    </div>`;
+    box.appendChild(warn);
+    warn.querySelector('#w-reuse').onclick = () => { warn.remove(); pickExercise(similar.id); };
+    warn.querySelector('#w-create').onclick = () => { warn.remove(); doCreate(name); };
+    warn.querySelector('#w-cancel').onclick = () => warn.remove();
+    return;
+  }
+  doCreate(name);                                       // aucun voisin → création directe
+}
+
+async function doCreate(name) {
+  try {
+    const ex = await createExercise(name);
+    bank.push(ex);
+    await pickExercise(ex.id);
+  } catch (err) { toast('Échec : ' + (err.message || 'création refusée')); }
+}
+
+/* Sélection = ajoute l'exo à la séance courante (via exercise_id). */
+async function pickExercise(exerciseId) {
+  const ex = bank.find(e => e.id === exerciseId);
+  try {
+    if (mode === 'proposed') await materialize();
+    else if (mode === 'empty' || !session) { session = await createSession('Séance du jour', null); mode = 'real'; exos = []; }
+    const order = exos.length;
+    const id = await addSessionExercise(session.id, exerciseId, order, null);
+    exos.push({ id, exercise_id: exerciseId, name: ex?.name || '?', order_index: order, target: '', target_reps: null, sets: [] });
+    bankEl().classList.remove('show');
+    paint(); toast('Exercice ajouté');
+  } catch (err) { toast('Échec : ' + (err.message || 'écriture refusée')); }
 }
 
 function esc(s) {

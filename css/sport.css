@@ -3,6 +3,26 @@
    Réutilise .popscrim/.popcard (nutrition.css) pour les modals centrés.
    ============================================================ */
 
+/* Banque d'exercices — plein écran (S1a) */
+.exo-bank { position: fixed; inset: 0; z-index: 60; background: var(--bg); display: none; flex-direction: column; padding: calc(14px + env(safe-area-inset-top)) 18px calc(14px + env(safe-area-inset-bottom)); }
+.exo-bank.show { display: flex; }
+.exo-bank__head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.exo-bank__x { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-size: 15px; cursor: pointer; flex: none; }
+.exo-bank__t { font-family: var(--head); font-weight: 700; font-size: 18px; }
+.exo-bank__create { display: flex; gap: 8px; margin-bottom: 14px; }
+.exo-bank__create input { flex: 1; background: #0e0e12; border: 1px solid var(--line); border-radius: 11px; padding: 12px 13px; color: var(--ink); font-size: 14px; outline: none; }
+.exo-bank__create input:focus { border-color: var(--accent); }
+.exo-bank__create .btn-primary { width: auto; min-height: 44px; padding: 0 16px; font-size: 14px; flex: none; box-shadow: none; }
+.exo-bank__list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.exo-bank__load { color: var(--dim); font-size: 13px; padding: 8px 0; }
+.exo-bank__item { width: 100%; text-align: left; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 15px; color: var(--ink); font-size: 15px; font-family: var(--ui); cursor: pointer; }
+.exo-bank__item:active { border-color: var(--accent); }
+.exo-bank__warn { position: absolute; inset: 0; background: rgba(4,5,8,.72); backdrop-filter: blur(4px); display: grid; place-items: center; padding: 24px; }
+.exo-bank__warn .w-card { width: 100%; max-width: 340px; background: var(--card); border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+.exo-bank__warn .w-t { font-family: var(--head); font-weight: 700; font-size: 16px; }
+.exo-bank__warn .w-s { font-size: 13px; color: var(--dim); line-height: 1.4; margin-bottom: 4px; }
+.exo-bank__warn .btn-primary, .exo-bank__warn .btn-secondary, .exo-bank__warn .btn-ghost-danger { margin-top: 0; }
+
 /* Barre de navigation de date (aujourd'hui ⇄ hier) */
 .datenav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .datenav .dn-lab { text-align: center; line-height: 1.2; }
