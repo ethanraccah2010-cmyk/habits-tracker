@@ -13,6 +13,9 @@ import { sb } from '../supabase.js';
 import { $, $$, gem } from '../ui.js';
 import { dayKey, addDays, fromKey } from '../dates.js';
 import { computeDailyScore } from '../score.js';
+import { computeWeightVelocity } from '../weight-velocity.js';
+import { fetchCurrentPhase } from '../nutrition-phase.js';
+import { snackNudge } from '../coach.js';
 
 let habits = [];
 let doneByDay = new Map();      // key -> Set(habit_id)
@@ -21,6 +24,9 @@ let sleepTargets = new Map();   // dow(0=lundi) -> {wakeMin, dur}
 let meals = [];                 // repas du jour
 let profile = null;            // profile_settings
 let nextEvent = null;
+let weights = [];               // weight_logs récents — vitesse P0a
+let phase = null;               // nutrition_phases courante — coach P1
+let foods = [];                 // catalogue d'aliments — reco encas
 let period = '1S';
 
 const PERIODS = { '1S': 7, '2S': 14, '1M': 30, '3M': 90 };
@@ -31,7 +37,8 @@ const parseTimeMin = (t) => { if (!t) return null; const [h, m] = t.split(':').m
 async function fetchAll() {
   const since = dayKey(addDays(new Date(), -97));
   const nowIso = new Date().toISOString();
-  const [hb, logs, sl, tg, ml, ps, ev] = await Promise.all([
+  const wSince = dayKey(addDays(new Date(), -30));   // fenêtre pour la vitesse de poids (P0a)
+  const [hb, logs, sl, tg, ml, ps, ev, wl, fd] = await Promise.all([
     sb.from('habits').select('id,name,icon').eq('archived', false),
     sb.from('habit_logs').select('habit_id,log_date,completed,weight').gte('log_date', since),
     sb.from('sleep_logs').select('log_date,bedtime,wake_time,duration_hours').gte('log_date', since),
@@ -39,9 +46,12 @@ async function fetchAll() {
     sb.from('meals').select('kcal,meal_date').eq('meal_date', dayKey()),   // calories du jour = date logique
     sb.from('profile_settings').select('target_kcal,target_protein_g,target_carbs_g,target_fat_g').maybeSingle(),
     sb.from('events').select('title,starts_at,ends_at,location').gte('starts_at', nowIso).order('starts_at', { ascending: true }).limit(1),
+    sb.from('weight_logs').select('log_date,weight_kg').gte('log_date', wSince),
+    sb.from('foods').select('name,kcal_100,protein_100,portion_g,category').eq('category', 'encas'),
   ]);
-  for (const r of [hb, logs, sl, tg, ml, ps, ev]) if (r.error) throw r.error;
-  return { hb: hb.data || [], logs: logs.data || [], sl: sl.data || [], tg: tg.data || [], ml: ml.data || [], ps: ps.data || null, ev: (ev.data || [])[0] || null };
+  for (const r of [hb, logs, sl, tg, ml, ps, ev, wl, fd]) if (r.error) throw r.error;
+  const ph = await fetchCurrentPhase().catch(() => null);
+  return { hb: hb.data || [], logs: logs.data || [], sl: sl.data || [], tg: tg.data || [], ml: ml.data || [], ps: ps.data || null, ev: (ev.data || [])[0] || null, wl: wl.data || [], fd: fd.data || [], ph };
 }
 
 function durOf(log) {
@@ -97,9 +107,16 @@ const caloriesToday = () => meals.reduce((s, m) => s + (Number(m.kcal) || 0), 0)
 /* ---------- Coach : message par priorité ---------- */
 function coachMessage() {
   const signals = [];
+  const remainingKcal = profile?.target_kcal ? profile.target_kcal - caloriesToday() : null;
+
+  // Nudge encas (P1) — vitesse de poids sous cible → propose un encas dense du catalogue
+  const velocity = computeWeightVelocity(weights, { asof: dayKey() });
+  const nudge = snackNudge({ phase, velocity, remainingKcal, foods });
+  if (nudge) signals.push({ urg: 9, html: nudge });
+
   // Calories restantes
   if (profile?.target_kcal) {
-    const remaining = profile.target_kcal - caloriesToday();
+    const remaining = remainingKcal;
     if (remaining > 150) signals.push({ urg: 6, html: `Il te reste <b>${remaining.toLocaleString('fr-FR')} kcal</b> à manger pour ton objectif du jour.` });
     else if (remaining < -150) signals.push({ urg: 5, html: `Tu as dépassé ton objectif calorique de <b>${(-remaining).toLocaleString('fr-FR')} kcal</b>.` });
   }
@@ -149,6 +166,7 @@ async function reload() {
     sleepTargets = new Map();
     for (const t of d.tg) sleepTargets.set(t.day_of_week, { wakeMin: parseTimeMin(t.wake_time), dur: Number(t.target_duration_hours) });
     meals = d.ml; profile = d.ps; nextEvent = d.ev;
+    weights = d.wl; foods = d.fd; phase = d.ph;
     paint();
   } catch (e) {
     root.innerHTML = `<div class="empty"><p>Impossible de charger l'accueil.<br>${escapeHtml(e.message || '')}</p></div>`;
