@@ -43,4 +43,37 @@ export function snackNudge({ phase, velocity, remainingKcal, foods }) {
   return `Ta prise ralentit (${v} kg/sem). Cale un encas dense : <b>${esc(snack.name)}</b> (~${snack.kcal} kcal${macro}).`;
 }
 
+/* ---------- Nudge de fin de journée (choix Ethan : ancré sur les restes du jour) ----------
+   Après 19h30, si les objectifs kcal/protéines ne sont pas atteints → propose un
+   encas du catalogue pour combler. Complémentaire au nudge « vitesse de poids ». */
+const CUTOFF_MIN = 19 * 60 + 30;   // 19h30
+const KCAL_GAP = 150;              // trou kcal minimal pour parler
+const PROT_GAP = 20;               // trou protéines minimal pour parler
+
+/* Encas qui comble le mieux : plus protéiné si trou de protéines, sinon plus dense, tenant dans les kcal restantes. */
+function pickForGap(foods, remainingKcal, preferProtein) {
+  const snacks = (foods || []).filter(f => (f.category || '') === 'encas').map(perPortion);
+  if (!snacks.length) return null;
+  const cap = remainingKcal && remainingKcal > 0 ? remainingKcal : Infinity;
+  const fits = snacks.filter(s => s.kcal <= cap);
+  const pool = fits.length ? fits : snacks;
+  return preferProtein
+    ? pool.slice().sort((a, b) => (b.protein || 0) - (a.protein || 0))[0]
+    : pool.slice().sort((a, b) => b.kcal - a.kcal)[0];
+}
+
+export function endOfDayNudge({ nowMinutes, remainingKcal, remainingProtein, foods }) {
+  if (nowMinutes < CUTOFF_MIN) return null;                             // avant 19h30 → muet
+  const kGap = remainingKcal != null && remainingKcal >= KCAL_GAP;
+  const pGap = remainingProtein != null && remainingProtein >= PROT_GAP;
+  if (!kGap && !pGap) return null;                                      // objectifs quasi atteints → muet
+  const food = pickForGap(foods, remainingKcal, pGap);
+  if (!food) return null;
+  const bits = [];
+  if (kGap) bits.push(`${Math.round(remainingKcal).toLocaleString('fr-FR')} kcal`);
+  if (pGap) bits.push(`${Math.round(remainingProtein)} g prot`);
+  const macro = food.protein != null ? `, ${food.protein} g prot` : '';
+  return `Il te reste ${bits.join(' · ')} avant ton objectif du jour. Tente : <b>${esc(food.name)}</b> (~${food.kcal} kcal${macro}).`;
+}
+
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }

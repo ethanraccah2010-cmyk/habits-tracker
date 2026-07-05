@@ -15,7 +15,7 @@ import { dayKey, addDays, fromKey } from '../dates.js';
 import { computeDailyScore } from '../score.js';
 import { computeWeightVelocity } from '../weight-velocity.js';
 import { fetchCurrentPhase } from '../nutrition-phase.js';
-import { snackNudge } from '../coach.js';
+import { snackNudge, endOfDayNudge } from '../coach.js';
 
 let habits = [];
 let doneByDay = new Map();      // key -> Set(habit_id)
@@ -43,11 +43,11 @@ async function fetchAll() {
     sb.from('habit_logs').select('habit_id,log_date,completed,weight').gte('log_date', since),
     sb.from('sleep_logs').select('log_date,bedtime,wake_time,duration_hours').gte('log_date', since),
     sb.from('sleep_targets').select('day_of_week,wake_time,target_duration_hours'),
-    sb.from('meals').select('kcal,meal_date').eq('meal_date', dayKey()),   // calories du jour = date logique
+    sb.from('meals').select('kcal,protein_g,meal_date').eq('meal_date', dayKey()),   // calories + prot du jour = date logique
     sb.from('profile_settings').select('target_kcal,target_protein_g,target_carbs_g,target_fat_g').maybeSingle(),
     sb.from('events').select('title,starts_at,ends_at,location').gte('starts_at', nowIso).order('starts_at', { ascending: true }).limit(1),
     sb.from('weight_logs').select('log_date,weight_kg').gte('log_date', wSince),
-    sb.from('foods').select('name,kcal_100,protein_100,portion_g,category').eq('category', 'encas'),
+    sb.from('foods').select('name,kcal_100,protein_100,portion_g,category'),
   ]);
   for (const r of [hb, logs, sl, tg, ml, ps, ev, wl, fd]) if (r.error) throw r.error;
   const ph = await fetchCurrentPhase().catch(() => null);
@@ -103,6 +103,7 @@ function bedTonight() {
 }
 const fmtClock = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')} h ${String(min % 60).padStart(2, '0')}`;
 const caloriesToday = () => meals.reduce((s, m) => s + (Number(m.kcal) || 0), 0);
+const proteinToday = () => meals.reduce((s, m) => s + (Number(m.protein_g) || 0), 0);
 
 /* ---------- Coach : message par priorité ---------- */
 function coachMessage() {
@@ -113,6 +114,12 @@ function coachMessage() {
   const velocity = computeWeightVelocity(weights, { asof: dayKey() });
   const nudge = snackNudge({ phase, velocity, remainingKcal, foods });
   if (nudge) signals.push({ urg: 9, html: nudge });
+
+  // Nudge fin de journée (choix Ethan) — après 19h30, restes kcal/prot non atteints
+  const remainingProtein = profile?.target_protein_g ? profile.target_protein_g - proteinToday() : null;
+  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+  const eod = endOfDayNudge({ nowMinutes, remainingKcal, remainingProtein, foods });
+  if (eod) signals.push({ urg: 7, html: eod });
 
   // Calories restantes
   if (profile?.target_kcal) {
