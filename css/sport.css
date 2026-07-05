@@ -13,7 +13,16 @@
 .exo-bank__create input { flex: 1; background: #0e0e12; border: 1px solid var(--line); border-radius: 11px; padding: 12px 13px; color: var(--ink); font-size: 14px; outline: none; }
 .exo-bank__create input:focus { border-color: var(--accent); }
 .exo-bank__create .btn-primary { width: auto; min-height: 44px; padding: 0 16px; font-size: 14px; flex: none; box-shadow: none; }
+.exo-bank__typerow { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.exo-bank__typerow .tlab { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); }
+.exo-type-seg { display: flex; gap: 6px; }
+.exo-type-seg button { border: 1px solid var(--line); background: var(--card); color: var(--dim); border-radius: 10px; padding: 8px 13px; font-size: 12.5px; cursor: pointer; font-family: var(--ui); }
+.exo-type-seg button.on { background: var(--accent); border-color: var(--accent); color: #06120e; font-weight: 600; }
 .exo-bank__list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.exo-bank__item { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.exo-bank__item .xt { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 3px 8px; border-radius: 99px; flex: none; }
+.exo-bank__item .xt.les { color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent); }
+.exo-bank__item .xt.pdc { color: #8accff; background: color-mix(in srgb, #8accff 15%, transparent); }
 .exo-bank__load { color: var(--dim); font-size: 13px; padding: 8px 0; }
 .exo-bank__item { width: 100%; text-align: left; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 15px; color: var(--ink); font-size: 15px; font-family: var(--ui); cursor: pointer; }
 .exo-bank__item:active { border-color: var(--accent); }
@@ -52,6 +61,10 @@
 .exoc .chart-btn { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: var(--card2);
   color: var(--accent); display: grid; place-items: center; cursor: pointer; font-size: 15px; flex: none; }
 .exoc.done { border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.exoc .del-btn { color: #ff6b6b; }
+
+/* Modale de suppression (S1b) */
+.rm-warn { font-size: 12.5px; color: #EBB54D; background: color-mix(in srgb, #EBB54D 12%, transparent); border: 1px solid color-mix(in srgb, #EBB54D 35%, transparent); border-radius: 11px; padding: 11px 13px; margin-bottom: 14px; line-height: 1.4; }
 
 /* Modal saisie de séries */
 .popcard.tall { max-height: 88vh; overflow-y: auto; }
@@ -60,6 +73,7 @@
 .entry-sub { font-size: 11px; color: var(--dim); margin-bottom: 14px; }
 .srow { display: grid; grid-template-columns: 48px 1fr 1fr 28px; align-items: center; gap: 8px;
   background: var(--card2); border-radius: 10px; padding: 8px 10px; margin-bottom: 7px; }
+.srow.pdc { grid-template-columns: 48px 1fr 28px; }
 .srow .si { font-size: 10px; color: var(--dim); }
 .srow .field { display: flex; align-items: center; gap: 5px; background: #0e0e12; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
 .srow .field.warn { border-color: color-mix(in srgb, #caa46a 55%, transparent); }

@@ -50,11 +50,12 @@ async function fetchSessionForDate(dateKey) {
 /* Nom d'un exo lu via la banque (exercise_id → exercises.name), plus le name texte. */
 async function fetchSessionExercises(sessionId) {
   const { data, error } = await sb.from('session_exercises')
-    .select('id,exercise_id,order_index,target_reps,exercises(name),exercise_sets(reps,kg,set_number)')
+    .select('id,exercise_id,order_index,target_reps,exercises(name,type_charge),exercise_sets(reps,kg,set_number)')
     .eq('session_id', sessionId).order('order_index', { ascending: true });
   if (error) throw error;
   return (data || []).map(se => ({
     id: se.id, exercise_id: se.exercise_id, name: se.exercises?.name || '(exercice supprimé)',
+    type_charge: se.exercises?.type_charge || 'lesté',
     order_index: se.order_index, target_reps: se.target_reps ?? null,
     target: se.target_reps ? `cible ${se.target_reps} reps` : '',
     sets: (se.exercise_sets || []).sort((a, b) => a.set_number - b.set_number).map(s => ({ reps: s.reps, kg: +s.kg })),
@@ -62,7 +63,7 @@ async function fetchSessionExercises(sessionId) {
 }
 async function fetchTemplateForDate(dateKey) {
   const { data, error } = await sb.from('workout_templates')
-    .select('id,title,day_of_week,template_exercises(exercise_id,target_sets,target_reps,order_index,exercises(name))')
+    .select('id,title,day_of_week,template_exercises(exercise_id,target_sets,target_reps,order_index,exercises(name,type_charge))')
     .eq('day_of_week', dowOf(dateKey)).limit(1);
   if (error) throw error;
   return data?.[0] || null;
@@ -100,21 +101,32 @@ async function addSessionExercise(sessionId, exercise_id, order_index, target_re
 
 /* ---------- Banque d'exercices (S1a) ---------- */
 async function fetchExercises() {
-  const { data, error } = await sb.from('exercises').select('id,name').order('name', { ascending: true });
+  const { data, error } = await sb.from('exercises').select('id,name,type_charge').order('name', { ascending: true });
   if (error) throw error;
   return data || [];
 }
-async function createExercise(name) {
+async function createExercise(name, type_charge) {
   const user_id = await getUserId();
-  const { data, error } = await sb.from('exercises').insert({ user_id, name }).select('id,name').single();
+  const { data, error } = await sb.from('exercises').insert({ user_id, name, type_charge }).select('id,name,type_charge').single();
   if (error) throw error;
   return data;
+}
+/* Retire un exo d'une séance (ses exercise_sets partent en cascade DB). */
+async function deleteSessionExercise(sessionExerciseId) {
+  const { error } = await sb.from('session_exercises').delete().eq('id', sessionExerciseId);
+  if (error) throw error;
+}
+/* Retire l'exo du gabarit (ne revient plus aux prochaines séances). Séances déjà générées inchangées. */
+async function deleteTemplateExercise(templateId, exerciseId) {
+  const { error } = await sb.from('template_exercises')
+    .delete().eq('template_id', templateId).eq('exercise_id', exerciseId);
+  if (error) throw error;
 }
 async function replaceSets(sessionExerciseId, sets) {
   const del = await sb.from('exercise_sets').delete().eq('session_exercise_id', sessionExerciseId);
   if (del.error) throw del.error;
-  const rows = sets.filter(s => s.reps > 0 && s.kg > 0)
-    .map((s, i) => ({ session_exercise_id: sessionExerciseId, set_number: i + 1, reps: s.reps, kg: s.kg }));
+  const rows = sets.filter(s => s.reps > 0)          // kg=0 permis (exos PDC)
+    .map((s, i) => ({ session_exercise_id: sessionExerciseId, set_number: i + 1, reps: s.reps, kg: s.kg || 0 }));
   if (rows.length) {
     const ins = await sb.from('exercise_sets').insert(rows);
     if (ins.error) throw ins.error;
@@ -137,6 +149,7 @@ async function load() {
         .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
         .map((te, i) => ({
           id: null, exercise_id: te.exercise_id, name: te.exercises?.name || '?',
+          type_charge: te.exercises?.type_charge || 'lesté',
           order_index: te.order_index ?? i,
           target: targetLabel(te.target_sets, te.target_reps), target_reps: te.target_reps ?? null, sets: [],
         }));
@@ -215,14 +228,18 @@ function paint() {
 }
 function exoCard(x, i) {
   const logged = x.sets.length > 0;
+  const pdc = x.type_charge === 'pdc';
   const sub = logged
-    ? `${x.sets.length} séries · 1RM est. <b>${bestOf(x.sets).toFixed(0)} kg</b>`
+    ? (pdc
+        ? `${x.sets.length} séries · best <b>${Math.max(...x.sets.map(s => s.reps))} reps</b>`
+        : `${x.sets.length} séries · 1RM est. <b>${bestOf(x.sets).toFixed(0)} kg</b>`)
     : (x.target || 'à enregistrer');
   return `<div class="exoc ${logged ? 'done' : ''}" data-exo="${i}">
     <div class="eh">
       <span class="anim">${ANIMS[i % ANIMS.length]}</span>
       <div class="en"><div class="n">${esc(x.name)}</div><div class="sub">${sub}</div></div>
       <button class="chart-btn" data-exo-chart="${i}" aria-label="Évolution">📈</button>
+      <button class="chart-btn del-btn" data-exo-del="${i}" aria-label="Retirer">🗑</button>
     </div>
   </div>`;
 }
@@ -232,6 +249,8 @@ export function bind(root) {
   root.addEventListener('click', (e) => {
     if (e.target.closest('[data-day-prev]')) { if (onToday()) { viewDate = YESTERDAY(); reloadView(); } return; }
     if (e.target.closest('[data-day-next]')) { if (!onToday()) { viewDate = TODAY(); reloadView(); } return; }
+    const del = e.target.closest('[data-exo-del]');
+    if (del) { e.stopPropagation(); openRemove(+del.dataset.exoDel); return; }
     const chart = e.target.closest('[data-exo-chart]');
     if (chart) { e.stopPropagation(); openChart(exos[+chart.dataset.exoChart]); return; }
     const card = e.target.closest('[data-exo]');
@@ -250,6 +269,58 @@ function modalEl() {
   return m;
 }
 
+/* ----- Suppression d'un exo en séance (S1b, §16.2) ----- */
+function openRemove(idx) {
+  const exo = exos[idx];
+  if (!exo) return;
+  const hasSets = (exo.sets || []).length > 0;
+  const hasTemplate = !!(session && session.template_id);
+  const m = modalEl();
+  m.innerHTML = `<div class="popcard">
+    <button class="popclose" data-mclose>×</button>
+    <div class="entry-h">Retirer « ${esc(exo.name)} » ?</div>
+    ${hasSets
+      ? `<div class="rm-warn">⚠️ ${exo.sets.length} série${exo.sets.length > 1 ? 's' : ''} enregistrée${exo.sets.length > 1 ? 's' : ''} dans cette séance ${exo.sets.length > 1 ? 'seront perdues' : 'sera perdue'}.</div>`
+      : `<div class="entry-sub">Retiré de cette séance — jamais de la banque.</div>`}
+    <button class="saveb" data-rm="once">Retirer de cette séance</button>
+    ${hasTemplate ? `<button class="addset" data-rm="future" style="margin-top:8px">Retirer aussi des prochaines séances</button>` : ''}
+    <button class="btn-ghost-danger" data-rm="cancel" style="margin-top:8px">Annuler</button>
+  </div>`;
+  m.classList.add('show');
+  m.querySelector('[data-rm="cancel"]').onclick = () => m.classList.remove('show');
+  m.querySelector('[data-rm="once"]').onclick = () => doRemove(idx, false);
+  const fut = m.querySelector('[data-rm="future"]');
+  if (fut) fut.onclick = () => doRemove(idx, true);
+}
+
+async function doRemove(idx, alsoTemplate) {
+  const exo = exos[idx];
+  const m = modalEl();
+  const btns = [...m.querySelectorAll('[data-rm]')];
+  btns.forEach(b => b.disabled = true);
+  try {
+    if (mode === 'proposed') {
+      // séance non matérialisée : "cette fois" = matérialiser SANS cet exo ; "prochaines" = retirer du gabarit
+      if (alsoTemplate) {
+        if (session?.template_id) await deleteTemplateExercise(session.template_id, exo.exercise_id);
+        exos.splice(idx, 1);
+      } else {
+        exos.splice(idx, 1);
+        await materialize();       // persiste la séance du jour sans cet exo (gabarit inchangé)
+      }
+    } else {
+      if (exo.id) await deleteSessionExercise(exo.id);       // cascade → exercise_sets
+      if (alsoTemplate && session?.template_id) await deleteTemplateExercise(session.template_id, exo.exercise_id);
+    }
+    m.classList.remove('show');
+    await load(); paint();
+    toast('Exercice retiré');
+  } catch (err) {
+    btns.forEach(b => b.disabled = false);
+    toast('Échec : ' + (err.message || 'suppression refusée'));
+  }
+}
+
 async function openEntry(idx) {
   const exo = exos[idx];
   // séries de départ : aujourd'hui si déjà saisi, sinon dernière séance loggée, sinon objectif
@@ -266,35 +337,44 @@ async function openEntry(idx) {
     initial = Array.from({ length: n }, () => ({ reps: '', kg: '' }));
   }
 
+  const pdc = exo.type_charge === 'pdc';
   const m = modalEl();
   m.innerHTML = `<div class="popcard tall">
     <button class="popclose" data-mclose>×</button>
     <div class="entry-h">${esc(exo.name)}</div>
-    <div class="entry-sub">${exo.target ? 'Objectif : ' + esc(exo.target) : 'Saisis tes séries'}</div>
-    <div id="entry-rows">${initial.map((s, i) => rowHTML(i, s)).join('')}</div>
+    <div class="entry-sub">${exo.target ? 'Objectif : ' + esc(exo.target) : (pdc ? 'Poids de corps · saisis tes reps' : 'Saisis tes séries')}</div>
+    <div id="entry-rows">${initial.map((s, i) => rowHTML(i, s, pdc)).join('')}</div>
     <button class="addset" id="entry-add">＋ Ajouter une série</button>
-    <div class="savestat">
-      <div>1RM estimé<b id="entry-1rm">—</b></div>
-      <div style="text-align:right">Volume total<b id="entry-vol">—</b></div>
-    </div>
+    ${pdc
+      ? `<div class="savestat"><div>Meilleure série<b id="entry-best">—</b></div><div style="text-align:right">Total reps<b id="entry-vol">—</b></div></div>`
+      : `<div class="savestat"><div>1RM estimé<b id="entry-1rm">—</b></div><div style="text-align:right">Volume total<b id="entry-vol">—</b></div></div>`}
     <button class="saveb" id="entry-save">Enregistrer</button>
-    <div class="algo-note">Le 1RM estimé suit la formule d'Epley (kg × (1 + reps/30)). Fiable surtout sous ~12 reps ; au-delà, c'est une approximation.</div>
+    ${pdc
+      ? `<div class="algo-note">Exercice au poids de corps : on suit les <b>reps</b> (pas de 1RM ni de charge).</div>`
+      : `<div class="algo-note">Le 1RM estimé suit la formule d'Epley (kg × (1 + reps/30)). Fiable surtout sous ~12 reps ; au-delà, c'est une approximation.</div>`}
   </div>`;
   m.classList.add('show');
 
   const rows = $('#entry-rows', m);
   const recalc = () => {
-    let best = 0, vol = 0, approx = false;
+    let best = 0, vol = 0, approx = false, bestReps = 0, totReps = 0;
     $$('.srow', rows).forEach(rw => {
       const reps = +rw.querySelector('[data-reps]').value || 0;
-      const kg = +rw.querySelector('[data-kg]').value || 0;
+      const kg = +(rw.querySelector('[data-kg]')?.value) || 0;
       vol += reps * kg;
+      totReps += reps;
+      if (reps > bestReps) bestReps = reps;
       const oneRm = e1rm(reps, kg);
       if (oneRm > best) { best = oneRm; approx = reps > 12; }
-      rw.querySelector('.field.reps')?.classList.toggle('warn', reps > 12);
+      rw.querySelector('.field.reps')?.classList.toggle('warn', !pdc && reps > 12);
     });
-    $('#entry-1rm', m).innerHTML = best ? `${best.toFixed(1)} kg${approx ? ' <span class="approx">≈</span>' : ''}` : '—';
-    $('#entry-vol', m).textContent = vol ? vol.toLocaleString('fr-FR') + ' kg' : '—';
+    if (pdc) {
+      $('#entry-best', m).textContent = bestReps ? bestReps + ' reps' : '—';
+      $('#entry-vol', m).textContent = totReps ? totReps + ' reps' : '—';
+    } else {
+      $('#entry-1rm', m).innerHTML = best ? `${best.toFixed(1)} kg${approx ? ' <span class="approx">≈</span>' : ''}` : '—';
+      $('#entry-vol', m).textContent = vol ? vol.toLocaleString('fr-FR') + ' kg' : '—';
+    }
   };
   const renumber = () => $$('.srow .si', rows).forEach((s, i) => s.textContent = 'Série ' + (i + 1));
   rows.addEventListener('input', recalc);
@@ -302,13 +382,13 @@ async function openEntry(idx) {
     const del = e.target.closest('[data-del]');
     if (del) { del.closest('.srow').remove(); renumber(); recalc(); }
   });
-  $('#entry-add', m).onclick = () => { rows.insertAdjacentHTML('beforeend', rowHTML($$('.srow', rows).length, { reps: '', kg: '' })); renumber(); recalc(); };
+  $('#entry-add', m).onclick = () => { rows.insertAdjacentHTML('beforeend', rowHTML($$('.srow', rows).length, { reps: '', kg: '' }, pdc)); renumber(); recalc(); };
   recalc();
 
   $('#entry-save', m).onclick = async () => {
     const sets = $$('.srow', rows).map(rw => ({
       reps: +rw.querySelector('[data-reps]').value || 0,
-      kg: +rw.querySelector('[data-kg]').value || 0,
+      kg: pdc ? 0 : (+(rw.querySelector('[data-kg]')?.value) || 0),
     }));
     const btn = $('#entry-save', m); btn.disabled = true; btn.textContent = 'Enregistrement…';
     try {
@@ -324,11 +404,11 @@ async function openEntry(idx) {
     }
   };
 }
-function rowHTML(i, s) {
-  return `<div class="srow">
+function rowHTML(i, s, pdc = false) {
+  return `<div class="srow ${pdc ? 'pdc' : ''}">
     <span class="si">Série ${i + 1}</span>
     <div class="field reps"><input type="number" inputmode="numeric" data-reps value="${s.reps ?? ''}"><span>reps</span></div>
-    <div class="field"><input type="number" inputmode="decimal" data-kg value="${s.kg ?? ''}"><span>kg</span></div>
+    ${pdc ? '' : `<div class="field"><input type="number" inputmode="decimal" data-kg value="${s.kg ?? ''}"><span>kg</span></div>`}
     <button class="del" data-del aria-label="Retirer">×</button>
   </div>`;
 }
@@ -337,17 +417,17 @@ function defaultSetCount(exo) {
   return t ? Math.min(8, Math.max(1, +t[1])) : 3;
 }
 
-/* ----- Modal graphique d'évolution du 1RM ----- */
-let chartName = null, chartHist = [], chartPeriod = '1M';
+/* ----- Modal graphique d'évolution (1RM lesté / reps pdc) ----- */
+let chartName = null, chartHist = [], chartPeriod = '1M', chartPdc = false;
 const CPERIODS = { '1S': 7, '1M': 30, '6M': 182, '1A': 365 };
 
 async function openChart(exo) {
-  chartName = exo.name; chartPeriod = '1M';
+  chartName = exo.name; chartPeriod = '1M'; chartPdc = exo.type_charge === 'pdc';
   const m = modalEl();
   m.innerHTML = `<div class="popcard">
     <button class="popclose" data-mclose>×</button>
     <div class="entry-h">${esc(exo.name)}</div>
-    <div class="exo-chart-sub">1RM estimé (Epley) · <span id="exo-trend" style="font-weight:600"></span></div>
+    <div class="exo-chart-sub">${chartPdc ? 'Meilleure série (reps)' : '1RM estimé (Epley)'} · <span id="exo-trend" style="font-weight:600"></span></div>
     <div class="seg" id="exo-seg">
       ${Object.keys(CPERIODS).map(k => `<button data-k="${k}" class="${k === chartPeriod ? 'on' : ''}">${k === '1A' ? '1an' : k}</button>`).join('')}
     </div>
@@ -373,8 +453,9 @@ function drawChart() {
   const m = $('#sport-modal');
   const line = $('#exo-line', m), area = $('#exo-area', m), xx = $('#exo-x', m), trend = $('#exo-trend', m);
   const since = dayKey(addDays(new Date(), -CPERIODS[chartPeriod]));
-  // un point par séance (meilleur 1RM de la séance), dans la période
-  const pts = chartHist.filter(h => h.date >= since && h.best > 0).map(h => ({ d: h.date, v: h.best }));
+  // un point par séance : meilleur 1RM (lesté) OU meilleure série en reps (pdc)
+  const metric = (h) => chartPdc ? Math.max(0, ...h.sets.map(s => s.reps || 0)) : h.best;
+  const pts = chartHist.filter(h => h.date >= since && metric(h) > 0).map(h => ({ d: h.date, v: metric(h) }));
   if (pts.length < 2) {
     line.setAttribute('d', ''); area.setAttribute('d', '');
     xx.innerHTML = `<span>${pts.length ? 'une seule séance — reviens après la prochaine' : 'pas encore de données sur la période'}</span>`;
@@ -396,7 +477,8 @@ function drawChart() {
   requestAnimationFrame(() => { line.style.transition = 'stroke-dashoffset 1.1s ease'; line.style.strokeDashoffset = 0; });
   xx.innerHTML = `<span>${monthLabel(pts[0].d)}</span><span>auj.</span>`;
   const diff = pts[pts.length - 1].v - pts[0].v;
-  trend.textContent = diff > 1 ? `▲ +${diff.toFixed(0)} kg` : diff < -1 ? `▼ ${diff.toFixed(0)} kg` : '■ stable';
+  const u = chartPdc ? 'reps' : 'kg';
+  trend.textContent = diff > 1 ? `▲ +${diff.toFixed(0)} ${u}` : diff < -1 ? `▼ ${diff.toFixed(0)} ${u}` : '■ stable';
   trend.style.color = diff > 1 ? '#3fd18a' : diff < -1 ? '#ff6b6b' : '#8b909c';
 }
 
@@ -436,21 +518,43 @@ export async function onFab() {
       <input id="exo-new" type="text" placeholder="Nouvel exercice…" autocomplete="off">
       <button id="exo-create" class="btn-primary">Créer</button>
     </div>
+    <div class="exo-bank__typerow">
+      <span class="tlab">Type de charge</span>
+      <div class="exo-type-seg" id="exo-type">
+        <button data-t="lesté" class="on">Lesté</button>
+        <button data-t="pdc">Poids de corps</button>
+      </div>
+    </div>
     <div class="exo-bank__list" id="exo-list"><div class="exo-bank__load">Chargement de la banque…</div></div>`;
   b.classList.add('show');
 
   try { bank = await fetchExercises(); } catch (e) { $('#exo-list', b).innerHTML = `<div class="empty"><p>Banque indisponible.<br>${esc(e.message || '')}</p></div>`; return; }
   renderBankList();
 
+  $$('#exo-type button', b).forEach(btn => btn.onclick = () => {
+    $$('#exo-type button', b).forEach(x => x.classList.toggle('on', x === btn));
+    renderBankList();                                     // filtre la liste sur le type sélectionné
+  });
   $('#exo-create', b).onclick = () => attemptCreate($('#exo-new', b).value);
   $('#exo-new', b).addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptCreate(e.target.value); });
 }
 
+/* Type de charge choisi dans le formulaire (défaut lesté). */
+const selectedType = () => bankEl().querySelector('#exo-type button.on')?.dataset.t || 'lesté';
+
 function renderBankList() {
   const list = $('#exo-list');
   if (!list) return;
-  if (!bank.length) { list.innerHTML = `<div class="empty"><p>Banque vide.<br>Crée ton premier exercice ci-dessus.</p></div>`; return; }
-  list.innerHTML = bank.map(e => `<button class="exo-bank__item" data-pick="${e.id}">${esc(e.name)}</button>`).join('');
+  const type = selectedType();
+  const shown = bank.filter(e => (e.type_charge || 'lesté') === type);
+  if (!shown.length) {
+    list.innerHTML = `<div class="empty"><p>Aucun exercice ${type === 'pdc' ? 'au poids de corps' : 'lesté'}.<br>Crée-en un ci-dessus (le type suit ce sélecteur).</p></div>`;
+    return;
+  }
+  list.innerHTML = shown.map(e => `<button class="exo-bank__item" data-pick="${e.id}">
+      <span class="xn">${esc(e.name)}</span>
+      <span class="xt ${e.type_charge === 'pdc' ? 'pdc' : 'les'}">${e.type_charge === 'pdc' ? 'PDC' : 'Lesté'}</span>
+    </button>`).join('');
   $$('[data-pick]', list).forEach(btn => btn.onclick = () => pickExercise(btn.dataset.pick));
 }
 
@@ -474,16 +578,16 @@ function attemptCreate(raw) {
     </div>`;
     box.appendChild(warn);
     warn.querySelector('#w-reuse').onclick = () => { warn.remove(); pickExercise(similar.id); };
-    warn.querySelector('#w-create').onclick = () => { warn.remove(); doCreate(name); };
+    warn.querySelector('#w-create').onclick = () => { warn.remove(); doCreate(name, selectedType()); };
     warn.querySelector('#w-cancel').onclick = () => warn.remove();
     return;
   }
-  doCreate(name);                                       // aucun voisin → création directe
+  doCreate(name, selectedType());                       // aucun voisin → création directe
 }
 
-async function doCreate(name) {
+async function doCreate(name, type_charge) {
   try {
-    const ex = await createExercise(name);
+    const ex = await createExercise(name, type_charge);
     bank.push(ex);
     await pickExercise(ex.id);
   } catch (err) { toast('Échec : ' + (err.message || 'création refusée')); }
@@ -497,7 +601,7 @@ async function pickExercise(exerciseId) {
     else if (mode === 'empty' || !session) { session = await createSession('Séance du jour', null); mode = 'real'; exos = []; }
     const order = exos.length;
     const id = await addSessionExercise(session.id, exerciseId, order, null);
-    exos.push({ id, exercise_id: exerciseId, name: ex?.name || '?', order_index: order, target: '', target_reps: null, sets: [] });
+    exos.push({ id, exercise_id: exerciseId, name: ex?.name || '?', type_charge: ex?.type_charge || 'lesté', order_index: order, target: '', target_reps: null, sets: [] });
     bankEl().classList.remove('show');
     paint(); toast('Exercice ajouté');
   } catch (err) { toast('Échec : ' + (err.message || 'écriture refusée')); }
