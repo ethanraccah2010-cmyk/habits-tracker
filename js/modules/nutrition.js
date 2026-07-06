@@ -303,7 +303,9 @@ function paintPoids() {
   const start = weights.length ? weights[0].weight_kg : null;
   const gain = (cur != null && start != null) ? cur - start : null;
 
-  top.innerHTML = `
+  // Tout le contenu Poids va dans la zone SCROLLABLE (#nut-list) ; graphe AU-DESSUS de vitesse/reco.
+  top.innerHTML = '';
+  list.innerHTML = `
     <div class="weigh-hero">
       <div>
         <div class="l">Poids ce matin</div>
@@ -318,8 +320,6 @@ function paintPoids() {
       <div class="wstat"><div class="l">Depuis le début</div>
         <div class="b ${gain != null && gain >= 0 ? 'up' : ''}">${gain != null ? (gain >= 0 ? '+' : '') + frKg(gain) + ' kg' : '—'}</div></div>
     </div>
-    ${velocityHTML()}
-    ${p0bHTML()}
     <div class="graph">
       <div class="gh"><span class="tt">Évolution du poids</span>
         <div class="seg" id="w-seg">
@@ -330,11 +330,13 @@ function paintPoids() {
         <path class="wln" id="w-line"></path>
       </svg>
       <div class="gx" id="w-x" style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-top:5px"></div>
-    </div>`;
+    </div>
+    ${velocityHTML()}
+    ${p0bHTML()}
+    <div style="font-size:11px;color:var(--dim);padding:2px 2px 8px">
+      Pèse-toi chaque matin à jeun pour une courbe fiable. La marche d'escalier marque chaque nouvelle pesée.</div>`;
 
   drawWeightChart();
-  list.innerHTML = `<div style="font-size:11px;color:var(--dim);padding:2px 2px 0">
-    Pèse-toi chaque matin à jeun pour une courbe fiable. La marche d'escalier marque chaque nouvelle pesée.</div>`;
 }
 
 /* Courbe en escalier (brief §9.3). Structure prête pour un lissage futur (§15.2). */

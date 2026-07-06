@@ -4,6 +4,7 @@
    ============================================================ */
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; }
+html { background: #08090c; }   /* zone derrière la barre de statut iOS = sombre (pas de bande blanche) */
 body {
   background: radial-gradient(120% 50% at 50% 0%, #16181f 0%, #070809 60%) fixed;
   color: var(--ink);
