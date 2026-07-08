@@ -110,10 +110,16 @@ function coachMessage() {
   const signals = [];
   const remainingKcal = profile?.target_kcal ? profile.target_kcal - caloriesToday() : null;
 
-  // Nudge encas (P1) — vitesse de poids sous cible → propose un encas dense du catalogue
-  const velocity = computeWeightVelocity(weights, { asof: dayKey() });
-  const nudge = snackNudge({ phase, velocity, remainingKcal, foods });
-  if (nudge) signals.push({ urg: 9, html: nudge });
+  // Nudge encas (P1) — vitesse de poids sous cible → propose un encas dense du catalogue.
+  // Désactivé tant que le guard temporel P0a (span 7j + 4 jours distincts) n'est pas
+  // verrouillé dans le brief — computeWeightVelocity tourne encore sur MIN_WEIGHINS=4
+  // sans span, guard connu comme non fiable.
+  const VELOCITY_NUDGE_ENABLED = false;
+  if (VELOCITY_NUDGE_ENABLED) {
+    const velocity = computeWeightVelocity(weights, { asof: dayKey() });
+    const nudge = snackNudge({ phase, velocity, remainingKcal, foods });
+    if (nudge) signals.push({ urg: 9, html: nudge });
+  }
 
   // Nudge fin de journée (choix Ethan) — après 19h30, restes kcal/prot non atteints
   const remainingProtein = profile?.target_protein_g ? profile.target_protein_g - proteinToday() : null;
