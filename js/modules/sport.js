@@ -26,12 +26,15 @@ let mode = 'empty';     // 'real' | 'proposed' | 'empty'
 let session = null;     // { id, title, template_id }
 let exos = [];          // [{ id|null, name, order_index, target, sets:[{reps,kg}] }]
 let viewDate = null;    // jour affiché (date logique). Borné : aujourd'hui ⇄ hier.
+let subview = 'planning';   // 'planning' | 'sessions' (semaine type) — S2 §16.6
+let templates = [];         // workout_templates + exos, pour « Mes séances »
+let windowDates = [];       // fenêtre planning : hier → J+7 (9 dates)
+let dayStates = new Map();  // dateKey -> 'fige' | 'plan' | 'calc' | 'empty'
 const ANIMS = ['🏋️', '💪', '🤸', '🦵', '🔥'];
+const DOW_LABEL = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+const DOW_SHORT = ['lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim'];
 
-/* Navigation de date bornée à 1 jour en arrière (brief §"Date logique"). */
 const TODAY = () => dayKey();
-const YESTERDAY = () => dayKey(addDays(new Date(), -1));
-const onToday = () => viewDate === TODAY();
 
 /* ---------- Epley ---------- */
 export const e1rm = (reps, kg) => (kg > 0 && reps > 0 ? kg * (1 + reps / 30) : 0);
@@ -84,13 +87,34 @@ async function fetchExoHistory(exerciseId) {
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
-async function createSession(title, template_id) {
+async function createSession(title, template_id, dateKey = viewDate) {
   const user_id = await getUserId();
   const { data, error } = await sb.from('workout_sessions')
-    .insert({ user_id, title, template_id: template_id || null, session_date: viewDate })   // date logique = jour affiché
+    .insert({ user_id, title, template_id: template_id || null, session_date: dateKey })   // date logique = jour choisi
     .select('id,title,template_id').single();
   if (error) throw error;
   return data;
+}
+async function deleteWorkoutSession(id) {
+  const { error } = await sb.from('workout_sessions').delete().eq('id', id);   // cascade session_exercises → exercise_sets
+  if (error) throw error;
+}
+/* États de la fenêtre : pour chaque date, la séance a-t-elle des exos / des séries ? */
+async function fetchWindowSessions(fromK, toK) {
+  const { data, error } = await sb.from('workout_sessions')
+    .select('id,session_date,session_exercises(id,exercise_sets(id))')
+    .gte('session_date', fromK).lte('session_date', toK);
+  if (error) throw error;
+  return (data || []).map(s => ({
+    id: s.id, date: s.session_date,
+    hasExos: (s.session_exercises || []).length > 0,
+    hasSets: (s.session_exercises || []).some(se => (se.exercise_sets || []).length > 0),
+  }));
+}
+async function fetchTemplateDows() {
+  const { data, error } = await sb.from('workout_templates').select('day_of_week');
+  if (error) throw error;
+  return new Set((data || []).map(t => t.day_of_week));
 }
 async function addSessionExercise(sessionId, exercise_id, order_index, target_reps = null) {
   const { data, error } = await sb.from('session_exercises')
@@ -110,6 +134,42 @@ async function createExercise(name, type_charge) {
   const { data, error } = await sb.from('exercises').insert({ user_id, name, type_charge }).select('id,name,type_charge').single();
   if (error) throw error;
   return data;
+}
+
+/* ---------- Semaine type (workout_templates) — S2 « Mes séances » ---------- */
+async function fetchTemplates() {
+  const { data, error } = await sb.from('workout_templates')
+    .select('id,day_of_week,title,template_exercises(id,exercise_id,target_sets,target_reps,order_index,exercises(name))')
+    .order('day_of_week', { ascending: true });
+  if (error) throw error;
+  return (data || []).map(t => ({
+    id: t.id, day_of_week: t.day_of_week, title: t.title,
+    exos: (t.template_exercises || [])
+      .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
+      .map(te => ({ id: te.id, exercise_id: te.exercise_id, name: te.exercises?.name || '?', order_index: te.order_index, target_reps: te.target_reps ?? null })),
+  }));
+}
+async function createTemplate(title, day_of_week) {
+  const user_id = await getUserId();
+  const { data, error } = await sb.from('workout_templates').insert({ user_id, title, day_of_week }).select('id').single();
+  if (error) throw error;
+  return data;
+}
+async function updateTemplate(id, fields) {
+  const { error } = await sb.from('workout_templates').update(fields).eq('id', id);
+  if (error) throw error;
+}
+async function deleteTemplate(id) {
+  const { error } = await sb.from('workout_templates').delete().eq('id', id);   // cascade template_exercises
+  if (error) throw error;
+}
+async function addTemplateExercise(template_id, exercise_id, order_index) {
+  const { error } = await sb.from('template_exercises').insert({ template_id, exercise_id, order_index });
+  if (error) throw error;
+}
+async function deleteTemplateExerciseById(id) {
+  const { error } = await sb.from('template_exercises').delete().eq('id', id);
+  if (error) throw error;
 }
 /* Retire un exo d'une séance (ses exercise_sets partent en cascade DB). */
 async function deleteSessionExercise(sessionExerciseId) {
@@ -176,55 +236,89 @@ async function materialize() {
 
 /* ---------- Rendu ---------- */
 export function render() {
-  return `<div id="sport-root"></div>`;
+  return `<div class="seg sport-seg" id="sport-seg">
+      <button data-sv="planning" class="${subview === 'planning' ? 'on' : ''}">Planning</button>
+      <button data-sv="sessions" class="${subview === 'sessions' ? 'on' : ''}">Mes séances</button>
+    </div>
+    <div id="sport-root"></div>`;
 }
 export async function mount() {
   viewDate = TODAY();                    // à chaque montage : on repart sur aujourd'hui
+  subview = 'planning';
   const root = $('#sport-root');
-  try { await load(); paint(); }
+  try { await Promise.all([load(), computeWindow()]); await paintView(); }
   catch (e) { if (root) root.innerHTML = `<div class="empty"><p>Chargement impossible.<br>${esc(e.message || '')}</p></div>`; }
 }
 
+/* Aiguille la vue selon le segment. */
+async function paintView() {
+  if (subview === 'sessions') await paintTemplates();
+  else paint();
+}
+
 async function reloadView() {
-  try { await load(); paint(); }
+  try { await Promise.all([load(), computeWindow()]); paint(); }
   catch (e) { const root = $('#sport-root'); if (root) root.innerHTML = `<div class="empty"><p>Chargement impossible.<br>${esc(e.message || '')}</p></div>`; }
 }
 
-/* Barre de navigation de date (aujourd'hui ⇄ hier, bornée). */
-function dateNavHTML() {
-  const today = onToday();
-  const lab = today ? "Aujourd'hui" : 'Hier';
-  const dateStr = fromKey(viewDate).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
-  return `<div class="datenav">
-    <button class="dn-arrow" data-day-prev ${today ? '' : 'disabled'} aria-label="Jour précédent">‹</button>
-    <div class="dn-lab"><b>${lab}</b><span>${dateStr}</span></div>
-    <button class="dn-arrow" data-day-next ${today ? 'disabled' : ''} aria-label="Jour suivant">›</button>
-  </div>`;
+/* Fenêtre du planning : hier → J+7, + résolution des 3 états par jour (§16.6). */
+async function computeWindow() {
+  windowDates = [];
+  for (let i = -1; i <= 7; i++) windowDates.push(dayKey(addDays(new Date(), i)));
+  const [sessions, dows] = await Promise.all([
+    fetchWindowSessions(windowDates[0], windowDates[windowDates.length - 1]),
+    fetchTemplateDows(),
+  ]);
+  dayStates = new Map();
+  for (const key of windowDates) {
+    const s = sessions.find(x => x.date === key);
+    if (s && s.hasSets) dayStates.set(key, 'fige');          // ≥1 série loggée → figé
+    else if (s) dayStates.set(key, 'plan');                  // session sans set → planifié
+    else if (dows.has(dowOf(key))) dayStates.set(key, 'calc'); // rien en base mais gabarit ce jour → calculé
+    else dayStates.set(key, 'empty');
+  }
 }
+
+/* Bande horizontale de jours (apparence sélecteur de nuits Sommeil, fenêtre futur). */
+function windowStripHTML() {
+  return `<div class="planstrip" id="plan-strip">${windowDates.map(k => {
+    const d = fromKey(k);
+    const st = dayStates.get(k) || 'empty';
+    const today = k === TODAY();
+    return `<button class="ps-day ${k === viewDate ? 'on' : ''}" data-plandate="${k}">
+        <span class="pd-dd">${d.getDate()}</span>
+        <span class="pd-dn">${DOW_SHORT[dowOf(k)]}${today ? ' ·' : ''}</span>
+        <span class="pd-dot ${st}"></span>
+      </button>`;
+  }).join('')}</div>`;
+}
+
+const isFige = () => mode === 'real' && exos.some(x => x.sets.length > 0);
 
 function paint() {
   const root = $('#sport-root');
   if (!root) return;
+  const planBtn = isFige() ? '' : `<button class="plan-btn" data-plan-open>${mode === 'real' ? 'Changer la séance planifiée' : 'Planifier une séance'}</button>`;
+
   if (mode === 'empty') {
-    root.innerHTML = dateNavHTML() + `<div class="empty">
-      <p>${onToday() ? "Aucune séance aujourd'hui" : 'Aucune séance ce jour-là'}, et pas de gabarit pour ce jour.<br>Ajoute un exercice avec le bouton ＋ pour démarrer.</p>
-    </div>`;
+    root.innerHTML = windowStripHTML() + `<div class="empty">
+      <p>Aucune séance ce jour-là, et pas de gabarit.<br>Planifie une séance ou ajoute un exercice avec ＋.</p>
+    </div>${planBtn}`;
     return;
   }
   const doneCount = exos.filter(x => x.sets.length).length;
-  const mins = exos.length * 10;
-  root.innerHTML = dateNavHTML() + `
+  root.innerHTML = windowStripHTML() + `
     <div class="sess">
-      <div class="t">Séance du jour — ${esc(session.title)}</div>
+      <div class="t">${esc(session.title)}</div>
       <div class="s">${exos.length} exercice${exos.length > 1 ? 's' : ''}</div>
       <div class="meta">
         <span><b>${exos.length}</b> exos</span>
-        <span><b>~${mins}</b> min</span>
         <span><b>${doneCount}</b> fait${doneCount > 1 ? 's' : ''}</span>
       </div>
-      ${mode === 'proposed' ? `<div class="badge-proposed">Proposé depuis ton gabarit</div>` : ''}
+      ${mode === 'proposed' ? `<div class="badge-proposed">Proposé depuis ton gabarit</div>` : isFige() ? `<div class="badge-fige">Séance loggée</div>` : `<div class="badge-plan">Planifié</div>`}
     </div>
-    ${exos.map((x, i) => exoCard(x, i)).join('')}`;
+    ${exos.map((x, i) => exoCard(x, i)).join('')}
+    ${planBtn}`;
 }
 function exoCard(x, i) {
   const logged = x.sets.length > 0;
@@ -244,11 +338,141 @@ function exoCard(x, i) {
   </div>`;
 }
 
+/* ---------- « Mes séances » (semaine type) — S2 Tâche 1 ---------- */
+async function paintTemplates() {
+  const root = $('#sport-root'); if (!root) return;
+  try { templates = await fetchTemplates(); }
+  catch (e) { root.innerHTML = `<div class="empty"><p>Chargement impossible.<br>${esc(e.message || '')}</p></div>`; return; }
+  const cards = templates.length
+    ? templates.map(t => `<div class="tpl" data-tpl="${t.id}">
+        <div class="tpl-h"><span class="tpl-day">${DOW_LABEL[t.day_of_week]}</span><span class="tpl-title">${esc(t.title)}</span></div>
+        <div class="tpl-exos">${t.exos.length ? t.exos.map(x => esc(x.name)).join(' · ') : 'Aucun exercice'}</div>
+      </div>`).join('')
+    : `<div class="empty"><p>Aucune séance type.<br>Crée ta première avec « ＋ Créer une séance ».</p></div>`;
+  root.innerHTML = `<button class="tpl-new" data-tpl-new>＋ Créer une séance</button>${cards}<div style="height:8px"></div>`;
+}
+
+async function reopenEditor(id) {
+  templates = await fetchTemplates();
+  const t = templates.find(x => x.id === id);
+  if (t) openTemplateEditor(t);
+}
+
+function openCreateTemplate() {
+  openSheet(`
+    <div class="sheet__title">Nouvelle séance type</div>
+    <div class="field"><label for="ntpl-name">Nom</label><input id="ntpl-name" type="text" placeholder="Ex. Push" autocomplete="off"></div>
+    <div class="field"><label for="ntpl-day">Jour habituel</label>
+      <select id="ntpl-day" class="dn-select">${DOW_LABEL.map((d, i) => `<option value="${i}">${d}</option>`).join('')}</select></div>
+    <button class="btn-primary" id="ntpl-create">Créer</button>`);
+  const s = $('#sheet');
+  setTimeout(() => s.querySelector('#ntpl-name').focus(), 250);
+  s.querySelector('#ntpl-create').onclick = async () => {
+    const title = s.querySelector('#ntpl-name').value.trim();
+    if (!title) { s.querySelector('#ntpl-name').focus(); return; }
+    const day = +s.querySelector('#ntpl-day').value;
+    try { const t = await createTemplate(title, day); closeSheet(); await paintTemplates(); toast('Séance créée'); await reopenEditor(t.id); }
+    catch (err) { toast('Échec : ' + (err.message || 'création refusée')); }
+  };
+}
+
+function openTemplateEditor(t) {
+  openSheet(`
+    <div class="sheet__title">Modifier la séance</div>
+    <div class="field"><label for="tpl-name">Nom</label><input id="tpl-name" type="text" value="${esc(t.title)}" autocomplete="off"></div>
+    <div class="field"><label for="tpl-day">Jour habituel</label>
+      <select id="tpl-day" class="dn-select">${DOW_LABEL.map((d, i) => `<option value="${i}" ${i === t.day_of_week ? 'selected' : ''}>${d}</option>`).join('')}</select></div>
+    <div class="field"><label>Exercices</label>
+      <div id="tpl-exos">${t.exos.length
+        ? t.exos.map(x => `<div class="tpl-exo-row"><span>${esc(x.name)}</span><button class="pdel" data-tdel="${x.id}" aria-label="Retirer">×</button></div>`).join('')
+        : '<div style="color:var(--dim);font-size:12.5px;padding:4px 0">Aucun exercice — ajoute-en un.</div>'}</div>
+    </div>
+    <button class="btn-secondary" id="tpl-addexo">＋ Ajouter un exercice</button>
+    <button class="btn-primary" id="tpl-save">Enregistrer</button>
+    <button class="btn-ghost-danger" id="tpl-del">Supprimer la séance</button>`);
+  const s = $('#sheet');
+  $$('[data-tdel]', s).forEach(b => b.onclick = async () => {
+    try { await deleteTemplateExerciseById(b.dataset.tdel); await reopenEditor(t.id); }
+    catch (err) { toast('Échec : ' + (err.message || 'suppression refusée')); }
+  });
+  s.querySelector('#tpl-addexo').onclick = () => openBankForTemplate(t.id);
+  s.querySelector('#tpl-save').onclick = async () => {
+    const title = s.querySelector('#tpl-name').value.trim();
+    if (!title) { s.querySelector('#tpl-name').focus(); return; }
+    const day = +s.querySelector('#tpl-day').value;
+    try { await updateTemplate(t.id, { title, day_of_week: day }); closeSheet(); await paintTemplates(); toast('Séance enregistrée'); }
+    catch (err) { toast('Échec : ' + (err.message || 'enregistrement refusé')); }
+  };
+  s.querySelector('#tpl-del').onclick = async () => {
+    if (!confirm('Supprimer cette séance type ?')) return;
+    try { await deleteTemplate(t.id); closeSheet(); await paintTemplates(); toast('Séance supprimée'); }
+    catch (err) { toast('Échec : ' + (err.message || 'suppression refusée')); }
+  };
+}
+
+/* Ouvre la banque en mode « ajout à un template ». */
+function openBankForTemplate(templateId) {
+  bankPickHandler = async (exId) => {
+    try {
+      const order = templates.find(t => t.id === templateId)?.exos.length || 0;
+      await addTemplateExercise(templateId, exId, order);
+      bankEl().classList.remove('show');
+      await reopenEditor(templateId);
+      toast('Exercice ajouté');
+    } catch (err) { toast('Échec : ' + (err.message || 'écriture refusée')); }
+  };
+  openBank('Ajouter à la séance');
+}
+
+/* ---------- Planifier une séance sur une date (S2 Tâche 2) ---------- */
+/* Snapshot atomique : session + ses exos créés ensemble (0 exo = repos, jamais accidentel). */
+async function planTemplateOnDate(template, date) {
+  const existing = await fetchSessionForDate(date);       // jour non figé → on remplace proprement
+  if (existing) await deleteWorkoutSession(existing.id);  // cascade session_exercises (pas de set car non figé)
+  const created = await createSession(template.title, template.id, date);
+  for (let i = 0; i < template.exos.length; i++) {
+    const te = template.exos[i];
+    await addSessionExercise(created.id, te.exercise_id, te.order_index ?? i, te.target_reps ?? null);
+  }
+}
+
+async function openPlanPicker(date) {
+  if (isFige()) { toast('Séance déjà loggée ce jour — non planifiable (déplacement en T3).'); return; }
+  openSheet(`<div class="sheet__title">Planifier une séance</div>
+    <p style="font-size:12px;color:var(--dim);margin:-4px 0 12px">${fromKey(date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'short' })}</p>
+    <div id="plan-list"><div style="color:var(--dim);font-size:13px;padding:8px 0">Chargement…</div></div>`);
+  const s = $('#sheet');
+  try {
+    templates = await fetchTemplates();
+    const list = s.querySelector('#plan-list');
+    if (!templates.length) { list.innerHTML = `<div style="color:var(--dim);font-size:13px;padding:8px 0">Aucune séance type. Crée-en une dans « Mes séances ».</div>`; return; }
+    list.innerHTML = templates.map(t => `<button class="preset-row" data-plt="${t.id}">
+        <span class="pn">${esc(t.title)}</span>
+        <span class="pk">${DOW_LABEL[t.day_of_week]} · ${t.exos.length} exo${t.exos.length > 1 ? 's' : ''}</span>
+      </button>`).join('');
+    $$('[data-plt]', s).forEach(b => b.onclick = async () => {
+      const t = templates.find(x => x.id === b.dataset.plt);
+      try { await planTemplateOnDate(t, date); closeSheet(); await reloadView(); toast('Séance planifiée'); }
+      catch (err) { toast('Échec : ' + (err.message || 'écriture refusée')); }
+    });
+  } catch (err) { s.querySelector('#plan-list').innerHTML = `<div style="color:#ff6b6b;font-size:13px">Échec : ${esc(err.message || '')}</div>`; }
+}
+
 /* ---------- Interactions ---------- */
 export function bind(root) {
   root.addEventListener('click', (e) => {
-    if (e.target.closest('[data-day-prev]')) { if (onToday()) { viewDate = YESTERDAY(); reloadView(); } return; }
-    if (e.target.closest('[data-day-next]')) { if (!onToday()) { viewDate = TODAY(); reloadView(); } return; }
+    const sv = e.target.closest('#sport-seg button');
+    if (sv) { subview = sv.dataset.sv; $$('#sport-seg button', root).forEach(b => b.classList.toggle('on', b === sv)); paintView(); return; }
+
+    // ----- Mes séances (semaine type) -----
+    if (e.target.closest('[data-tpl-new]')) { openCreateTemplate(); return; }
+    const tpl = e.target.closest('[data-tpl]');
+    if (tpl) { const t = templates.find(x => x.id === tpl.dataset.tpl); if (t) openTemplateEditor(t); return; }
+
+    // ----- Planning (fenêtre de dates) -----
+    const pd = e.target.closest('[data-plandate]');
+    if (pd) { const k = pd.dataset.plandate; if (k !== viewDate) { viewDate = k; reloadView(); } return; }
+    if (e.target.closest('[data-plan-open]')) { openPlanPicker(viewDate); return; }
     const del = e.target.closest('[data-exo-del]');
     if (del) { e.stopPropagation(); openRemove(+del.dataset.exoDel); return; }
     const chart = e.target.closest('[data-exo-chart]');
@@ -313,7 +537,7 @@ async function doRemove(idx, alsoTemplate) {
       if (alsoTemplate && session?.template_id) await deleteTemplateExercise(session.template_id, exo.exercise_id);
     }
     m.classList.remove('show');
-    await load(); paint();
+    await reloadView();
     toast('Exercice retiré');
   } catch (err) {
     btns.forEach(b => b.disabled = false);
@@ -395,7 +619,7 @@ async function openEntry(idx) {
       await materialize();                         // crée la séance réelle si proposée
       const seId = exos[idx].id;                   // id (re)mappé après matérialisation
       await replaceSets(seId, sets);
-      await load(); paint();
+      await reloadView();
       m.classList.remove('show');
       toast('Séries enregistrées');
     } catch (err) {
@@ -484,6 +708,7 @@ function drawChart() {
 
 /* ---------- FAB : banque d'exercices plein écran (S1a) ---------- */
 let bank = [];   // exercises chargés à l'ouverture
+let bankPickHandler = pickExercise;   // que faire quand on choisit un exo (séance par défaut ; template en « Mes séances »)
 
 const norm = (s) => s.trim().toLowerCase();
 const findExact = (name) => bank.find(e => norm(e.name) === norm(name));
@@ -509,10 +734,17 @@ function bankEl() {
 }
 
 export async function onFab() {
+  if (subview === 'sessions') { openCreateTemplate(); return; }   // « Mes séances » → créer un template
+  bankPickHandler = pickExercise;                                 // Planning → ajouter à la séance du jour
+  await openBank('Ajouter un exercice');
+}
+
+/* Ouvre la banque plein écran ; la sélection passe par bankPickHandler. */
+async function openBank(title) {
   const b = bankEl();
   b.innerHTML = `<div class="exo-bank__head">
       <button class="exo-bank__x" data-bank-close aria-label="Fermer">✕</button>
-      <div class="exo-bank__t">Ajouter un exercice</div>
+      <div class="exo-bank__t">${esc(title)}</div>
     </div>
     <div class="exo-bank__create">
       <input id="exo-new" type="text" placeholder="Nouvel exercice…" autocomplete="off">
@@ -555,7 +787,7 @@ function renderBankList() {
       <span class="xn">${esc(e.name)}</span>
       <span class="xt ${e.type_charge === 'pdc' ? 'pdc' : 'les'}">${e.type_charge === 'pdc' ? 'PDC' : 'Lesté'}</span>
     </button>`).join('');
-  $$('[data-pick]', list).forEach(btn => btn.onclick = () => pickExercise(btn.dataset.pick));
+  $$('[data-pick]', list).forEach(btn => btn.onclick = () => bankPickHandler(btn.dataset.pick));
 }
 
 /* Anti-doublon 2 étages (trim + minuscules). */
@@ -563,7 +795,7 @@ function attemptCreate(raw) {
   const name = (raw || '').trim();
   if (!name) return;
   const exact = findExact(name);
-  if (exact) { pickExercise(exact.id); return; }      // étage 1 : égalité → réutiliser, muet
+  if (exact) { bankPickHandler(exact.id); return; }   // étage 1 : égalité → réutiliser, muet
   const similar = findSimilar(name);
   if (similar) {                                        // étage 2 : ressemblance → avertir, pas bloquer
     const box = bankEl();
@@ -577,7 +809,7 @@ function attemptCreate(raw) {
       <button class="btn-ghost-danger" id="w-cancel">Annuler</button>
     </div>`;
     box.appendChild(warn);
-    warn.querySelector('#w-reuse').onclick = () => { warn.remove(); pickExercise(similar.id); };
+    warn.querySelector('#w-reuse').onclick = () => { warn.remove(); bankPickHandler(similar.id); };
     warn.querySelector('#w-create').onclick = () => { warn.remove(); doCreate(name, selectedType()); };
     warn.querySelector('#w-cancel').onclick = () => warn.remove();
     return;
@@ -589,7 +821,7 @@ async function doCreate(name, type_charge) {
   try {
     const ex = await createExercise(name, type_charge);
     bank.push(ex);
-    await pickExercise(ex.id);
+    await bankPickHandler(ex.id);
   } catch (err) { toast('Échec : ' + (err.message || 'création refusée')); }
 }
 
@@ -603,7 +835,7 @@ async function pickExercise(exerciseId) {
     const id = await addSessionExercise(session.id, exerciseId, order, null);
     exos.push({ id, exercise_id: exerciseId, name: ex?.name || '?', type_charge: ex?.type_charge || 'lesté', order_index: order, target: '', target_reps: null, sets: [] });
     bankEl().classList.remove('show');
-    paint(); toast('Exercice ajouté');
+    await reloadView(); toast('Exercice ajouté');
   } catch (err) { toast('Échec : ' + (err.message || 'écriture refusée')); }
 }
 
